@@ -10,18 +10,20 @@ permissions:
 
 jobs:
   update:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       - name: Update market-data.js
-        shell: pwsh
-        run: .\update_market_data.ps1
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          .\update_market_data.ps1
 
       - name: Commit updated market data
-        shell: pwsh
+        shell: powershell
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -33,4 +35,3 @@ jobs:
           }
           git commit -m "Update market data"
           git push
-
