@@ -1,0 +1,19 @@
+{
+  "name": "A股投资记录与决策系统",
+  "short_name": "投资系统",
+  "description": "个人使用的A股投资记录、情绪温度计、交易日志与资产统计工具。",
+  "start_url": "./investment_system.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f8",
+  "theme_color": "#101828",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
