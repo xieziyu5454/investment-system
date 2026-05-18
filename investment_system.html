@@ -203,7 +203,10 @@
       <h1>A股投资记录与决策系统</h1>
       <div class="sub">把投资计划、情绪温度计、交易日志、资产统计放在一个地方。</div>
     </div>
-    <div class="status-pill" id="dataStatus">数据状态：读取中</div>
+    <div>
+      <div class="status-pill" id="dataStatus">数据状态：读取中</div>
+      <div class="small" id="openUpdateStatus" style="margin-top:6px;text-align:right"></div>
+    </div>
   </header>
 
   <nav>
@@ -396,25 +399,57 @@
 
   <section class="view" id="rules">
     <div class="rules">
-      <div class="rule blue"><b>买入条件 A：</b>情绪温度 ≤ 30%，说明市场偏悲观，可以进入加仓评估。</div>
-      <div class="rule blue"><b>买入条件 B：</b>沪深300 从过去 6 个月高点回撤 ≥ 8%，可以进入加仓评估。</div>
-      <div class="rule amber"><b>加仓金额：</b>只满足 A 或 B，考虑 2 万；同时满足 A+B，考虑 3 万；如果 PE ≤ 13，可额外 +2 万。</div>
-      <div class="rule red"><b>主动减仓：</b>情绪温度 ≥ 80% 只是提醒，不单独减仓；还要看媒体叙事、社交热度等辅助指标。</div>
-      <div class="rule red"><b>减仓幅度：</b>80~85% 减当前剩余市值 25%；85~90% 减 1/3；>90% 减 1/2。PE < 14 时减半，PE < 12 默认不主动减仓。</div>
-      <div class="rule red"><b>再次减仓：</b>系统会读取交易日志里的沪深300ETF卖出记录。第二次及以后必须同时满足：距离上次减仓 ≥6周、当前温度仍 ≥80%、且当前温度高于上次或温度已连续4周 ≥80%。</div>
-      <div class="rule red"><b>PE安全阀：</b>PE < 12 时默认不主动减仓；只有温度 >95% 且社交热度满足时，才允许减仓 10%。</div>
-      <div class="rule red"><b>被动减仓：</b>沪深300回撤 ≥15%，且情绪不是悲观时，减当前剩余市值 1/3；如果过去12周内已有主动减仓，则减半为 1/6。</div>
-      <div class="rule"><b>铁律：</b>每次操作都记录。长期统计依赖记录，没有记录就很难验证策略。</div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <div class="label">黄金ETF第三批设置</div>
-      <div class="small">你的计划是：从第一批买入之后形成的最高点开始算，回撤 ≥ 10% 触发第三批；或者第一批买入满 3 个月仍未触发，则直接买入。</div>
-      <div class="form-grid two" style="margin-top:10px">
-        <div><label class="small">第一批黄金买入日期</label><input type="date" id="goldAnchorDate"></div>
-        <div><label class="small">第三批计划金额（元）</label><input type="number" id="goldThirdAmount" placeholder="例如 30000"></div>
+      <div class="rule blue">
+        <b>沪深300ETF买入触发：</b><br>
+        条件A：情绪温度 ≤ 30%，情绪极度悲观，可独立触发评估。<br>
+        条件B：沪深300从过去6个月最高点回撤 ≥ 10%。<br>
+        A或B任意一条成立，就进入买入评估。
       </div>
-      <button style="margin-top:10px" onclick="saveGoldPlanSettings()">保存黄金计划设置</button>
-      <div class="small" id="goldPlanSettingText" style="margin-top:10px"></div>
+      <div class="rule amber">
+        <b>买入金额：</b><br>
+        仅满足A或B：从中短债取出 2 万买入。<br>
+        同时满足A+B：买入 3 万。<br>
+        如果 PE ≤ 13：在以上基础上额外 +2 万，总仓位仍不能超过沪深300ETF上限。
+      </div>
+      <div class="rule red">
+        <b>被动减仓（趋势破坏信号）：</b><br>
+        回撤基准优先使用最近一次主动买入后形成的阶段最高点，不含每月定投。<br>
+        如果一直没有主动买入、只有定投，则使用过去6个月最高点。<br>
+        从该高点回撤 ≥ 15%，且情绪中性或亢奋、不是悲观时，减当时剩余市值的 1/3，转入中短债。<br>
+        若过去12周内已发生过主动减仓，被动减仓幅度减半，即 1/6。
+      </div>
+      <div class="rule red">
+        <b>主动卖出触发：</b><br>
+        必要条件：情绪温度 ≥ 80%。如果温度不到80%，不触发任何主动减仓。<br>
+        增强确认：媒体叙事、社交热度这两条辅助指标至少满足1条。辅助指标由AI舆情评估保存结果参与判断。
+      </div>
+      <div class="rule red">
+        <b>主动减仓幅度：</b><br>
+        温度 80~85%：减当前剩余市值 25%。<br>
+        温度 85~90%：减当前剩余市值 1/3。<br>
+        温度 >90%：减当前剩余市值 1/2。<br>
+        每次减仓基数是当时剩余市值，不是最初总市值。
+      </div>
+      <div class="rule red">
+        <b>再次减仓条件：</b><br>
+        第二次及以后，必须同时满足三条：<br>
+        1. 距离上次减仓 ≥ 6周。<br>
+        2. 当前情绪温度仍 ≥ 80%。<br>
+        3. 当前温度高于上次减仓时的温度，或温度持续 ≥80% 已超过4周。<br>
+        页面总览会显示减仓冷却期倒计时。
+      </div>
+      <div class="rule red">
+        <b>PE约束与安全阀：</b><br>
+        PE < 14：减仓幅度减半。<br>
+        PE < 12：默认不主动减仓。<br>
+        PE < 12 时的例外：温度 >95% 且社交热度满足，允许减仓 10% 作为安全阀。
+      </div>
+      <div class="rule">
+        <b>铁律：</b>每次操作都记录。长期统计依赖交易日志和资产快照，没有记录就很难验证策略。
+      </div>
+      <div class="rule amber">
+        <b>黄金ETF第三批：</b>第一批买入信息从“交易日志”读取，不再单独设置。系统会从第一笔黄金ETF买入日期之后的高点开始算，回撤 ≥ 10% 触发第三批；或者第一批买入满约3个月仍未触发，则提示直接买入。
+      </div>
     </div>
     <div class="card source-list" style="margin-top:14px">
       <div class="label">数据来源</div>
@@ -440,7 +475,7 @@
     <div class="card" style="margin-top:14px">
       <div class="label">自动更新说明</div>
       <div class="small">
-        每个交易日晚上 8 点更新依赖同目录的 <b>update_market_data.ps1</b>。脚本会抓取最新融资余额、沪深300 PE、指数/ETF走势和财经新闻关键词，然后写入 <b>market-data.js</b>。这个网页下次打开时会自动读取新数据。
+        如果通过 <b>start_investment_system.ps1</b> 启动本地服务，每次打开或刷新网页都会尝试更新数据。直接双击 HTML 文件时，网页只能读取本地已有的 <b>market-data.js</b>。
       </div>
     </div>
   </section>
@@ -577,7 +612,7 @@ function makeDecision(s) {
   if (!s) return { cls: "", text: "还没有足够数据。先运行更新脚本，或者手动补录融资余额和 PE。" };
   if (s.temp <= 30) {
     const extra = s.pe != null && s.pe <= 13 ? "PE 也不高，计划里允许考虑额外加仓。" : "PE 未触发额外加仓条件。";
-    return { cls: "cold", text: `当前温度 ${s.temp}%，进入“偏冷/悲观”区。下一步不是立刻冲动买入，而是检查是否也满足 6 个月回撤条件；${extra}` };
+    return { cls: "cold", text: `当前温度 ${s.temp}%，进入“偏冷/悲观”区。下一步不是立刻冲动买入，而是检查沪深300是否也满足 6 个月回撤10%条件；${extra}` };
   }
   if (s.temp >= 80) {
     return { cls: "hot", text: `当前温度 ${s.temp}%，进入“偏热/亢奋”区。下一步检查媒体叙事和社交热度，满足辅助指标后才按计划减仓。` };
@@ -642,7 +677,6 @@ function render() {
   box.textContent = decision.text;
   renderSellCooldown();
   renderSignalCards(lastSnap);
-  renderGoldSettings();
   renderAiDecision();
   renderSnapshotAutoIndex();
 
@@ -719,6 +753,59 @@ function etf300SellTrades() {
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+function etf300ActiveBuyTrades() {
+  return [...(state.trades || [])]
+    .filter(t => String(t.asset || "").includes("沪深300") && t.side === "买入" && Number(t.amount) > 0)
+    .filter(t => t.reason !== "每月定投")
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+function normalizeMarketDate(date) {
+  const text = String(date || "");
+  return text.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
+}
+function hs300Rows() {
+  return (AUTO.hs300 || [])
+    .filter(r => Number.isFinite(Number(r.close)))
+    .map(r => ({ ...r, date: normalizeMarketDate(r.date), close: Number(r.close), high: Number(r.high) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+function passiveDrawdownBasis() {
+  const rows = hs300Rows();
+  if (!rows.length) return { ready: false, reason: "暂无沪深300行情数据" };
+  const latestRow = rows[rows.length - 1];
+  const activeBuys = etf300ActiveBuyTrades();
+  const lastActiveBuy = activeBuys.length ? activeBuys[activeBuys.length - 1] : null;
+
+  if (lastActiveBuy) {
+    const stageRows = rows.filter(r => r.date >= lastActiveBuy.date);
+    if (!stageRows.length) return { ready: false, reason: "最近一次主动买入之后暂无沪深300行情数据" };
+    const high = Math.max(...stageRows.map(r => Number.isFinite(r.high) ? r.high : r.close));
+    return {
+      ready: true,
+      basis: "active-buy",
+      basisText: `最近一次主动买入后高点（${lastActiveBuy.date} 之后）`,
+      lastActiveBuy,
+      high,
+      close: latestRow.close,
+      currentDate: latestRow.date,
+      drawdown: (latestRow.close - high) / high * 100
+    };
+  }
+
+  const signalHs300 = AUTO.signals && AUTO.signals.hs300;
+  const high = signalHs300 && Number.isFinite(Number(signalHs300.sixMonthHigh))
+    ? Number(signalHs300.sixMonthHigh)
+    : Math.max(...rows.slice(-126).map(r => Number.isFinite(r.high) ? r.high : r.close));
+  return {
+    ready: true,
+    basis: "six-month",
+    basisText: "过去6个月高点（尚无主动买入记录，仅按定投口径）",
+    high,
+    close: latestRow.close,
+    currentDate: latestRow.date,
+    drawdown: (latestRow.close - high) / high * 100
+  };
 }
 function hotForFourWeeks(currentDate) {
   const rows = sentimentSeries().filter(r => r.date <= currentDate && r.date >= shiftDate(currentDate, -28));
@@ -838,11 +925,12 @@ function activeEtf300SellPlan(base, temp, ai) {
   };
 }
 function passiveEtf300SellPlan(temp) {
-  const hs300 = AUTO.signals && AUTO.signals.hs300;
-  const drawdown = hs300 ? Number(hs300.drawdownPct) : null;
-  const currentDate = (hs300 && hs300.date ? String(hs300.date).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3") : today());
+  const basis = passiveDrawdownBasis();
+  const drawdown = basis.ready ? Number(basis.drawdown) : null;
+  const currentDate = basis.ready ? basis.currentDate : today();
   const blockers = [];
-  if (!Number.isFinite(drawdown) || drawdown > -15) blockers.push("沪深300回撤未达到15%，不触发被动减仓");
+  if (!basis.ready) blockers.push(basis.reason || "暂无被动减仓基准数据");
+  if (!Number.isFinite(drawdown) || drawdown > -15) blockers.push("沪深300按新版基准计算的回撤未达到15%，不触发被动减仓");
   if (!Number.isFinite(temp) || temp <= 30) blockers.push("情绪仍偏悲观，不触发被动减仓");
 
   const recentActiveSell = etf300SellTrades()
@@ -859,7 +947,7 @@ function passiveEtf300SellPlan(temp) {
     sellReasons: blockers.length
       ? blockers
       : [
-          `被动减仓：沪深300回撤 ${num(drawdown, 2)}%，且情绪非悲观`,
+          `被动减仓：${basis.basisText} 回撤 ${num(drawdown, 2)}%，且情绪非悲观`,
           recentActiveSell ? `过去12周内已有主动减仓 ${recentActiveSell.date}，本次幅度减半` : "",
           `本次计划减仓比例：${formatRate(rate)}`
         ].filter(Boolean)
@@ -912,10 +1000,14 @@ function renderSellCooldown() {
 }
 function goldPlanSignal(lastSnap) {
   const settings = state.settings || {};
-  const anchorDate = settings.goldAnchorDate;
+  const goldBuys = [...(state.trades || [])]
+    .filter(t => String(t.asset || "").includes("黄金") && t.side === "买入" && Number(t.amount) > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const firstBuy = goldBuys[0];
+  const anchorDate = firstBuy ? firstBuy.date : settings.goldAnchorDate;
   const amount = Number(settings.goldThirdAmount || 30000);
   if (!anchorDate) {
-    return { ready: false, title: "需要设置基准日期", text: "请先在“计划规则”里填写第一批黄金买入日期。", buySignal: false };
+    return { ready: false, title: "等待第一批记录", text: "请先在“交易日志”里记录第一笔黄金ETF买入，系统会自动从那天开始计算第三批。", buySignal: false };
   }
   const rows = (AUTO.gold || []).filter(r => r.date >= anchorDate).sort((a, b) => a.date.localeCompare(b.date));
   if (!rows.length) {
@@ -934,6 +1026,8 @@ function goldPlanSignal(lastSnap) {
     buySignal: dueByDrawdown || dueByTime,
     sellSignal: sellByAllocation,
     amount,
+    anchorDate,
+    firstBuy,
     close: Number(latest.close),
     high,
     drawdown,
@@ -967,7 +1061,7 @@ function renderSignalCards(lastSnap) {
   } else if (etf.buySignal) {
     etfCard.className = "card signal-card buy";
     document.getElementById("etf300SignalTitle").textContent = "出现买入提醒";
-    document.getElementById("etf300SignalText").innerHTML = `建议按计划评估约 ${money(etf.suggestedBuyAmount)} 元。510300 最新 ${num(etf.close, 3)}，沪深300近6个月回撤 ${num((signals.hs300 || {}).drawdownPct, 2)}%。<br>${tags(etf.buyReasons)}`;
+    document.getElementById("etf300SignalText").innerHTML = `建议按计划评估约 ${money(etf.suggestedBuyAmount)} 元。510300 最新 ${num(etf.close, 3)}，沪深300近6个月回撤 ${num((signals.hs300 || {}).drawdownPct, 2)}%，条件B阈值为10%。<br>${tags(etf.buyReasons)}`;
   } else {
     etfCard.className = "card signal-card ok";
     document.getElementById("etf300SignalTitle").textContent = "暂无买卖信号";
@@ -986,32 +1080,13 @@ function renderSignalCards(lastSnap) {
   } else if (gold.buySignal) {
     goldCard.className = "card signal-card buy";
     document.getElementById("goldSignalTitle").textContent = "出现第三批买入提醒";
-    document.getElementById("goldSignalText").innerHTML = `计划金额约 ${money(gold.amount)} 元。518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。<br>${tags(gold.reasons)}`;
+    document.getElementById("goldSignalText").innerHTML = `计划金额约 ${money(gold.amount)} 元。第一批记录日 ${gold.anchorDate}，518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。<br>${tags(gold.reasons)}`;
   } else {
     goldCard.className = "card signal-card ok";
     document.getElementById("goldSignalTitle").textContent = "暂无买卖信号";
-    document.getElementById("goldSignalText").textContent = `518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : ""}`;
+    document.getElementById("goldSignalText").textContent = `第一批记录日 ${gold.anchorDate}。518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : ""}`;
   }
 
-}
-function renderGoldSettings() {
-  const settings = state.settings || {};
-  const dateInput = document.getElementById("goldAnchorDate");
-  const amountInput = document.getElementById("goldThirdAmount");
-  if (!dateInput || !amountInput) return;
-  dateInput.value = settings.goldAnchorDate || "";
-  amountInput.value = settings.goldThirdAmount || 30000;
-  const g = goldPlanSignal(latest([...state.snapshots].sort((a, b) => a.date.localeCompare(b.date))));
-  document.getElementById("goldPlanSettingText").textContent = g.ready
-    ? `当前按 ${settings.goldAnchorDate} 之后的高点计算：高点 ${num(g.high, 3)}，最新 ${num(g.close, 3)}，回撤 ${num(g.drawdown, 2)}%，经过 ${g.days} 天。`
-    : g.text;
-}
-function saveGoldPlanSettings() {
-  const goldAnchorDate = document.getElementById("goldAnchorDate").value;
-  const goldThirdAmount = Number(document.getElementById("goldThirdAmount").value || 30000);
-  state.settings = { ...(state.settings || {}), goldAnchorDate, goldThirdAmount };
-  saveState();
-  render();
 }
 function tags(items) {
   return (items || []).map(x => `<span class="tag">${x}</span>`).join("");
@@ -1349,10 +1424,74 @@ document.getElementById("sentimentText").addEventListener("input", updateLocalSe
 window.addEventListener("resize", () => setTimeout(render, 50));
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("./sw.js?version=3").catch(() => {});
   });
 }
 render();
+clearOldAppCacheOnce();
+refreshMarketDataOnOpen();
+
+async function clearOldAppCacheOnce() {
+  if (!("caches" in window) || !("serviceWorker" in navigator)) return;
+  const key = "investment_cache_cleared_v3";
+  if (localStorage.getItem(key)) return;
+  try {
+    const names = await caches.keys();
+    await Promise.all(names.filter(name => name.startsWith("investment-system-")).map(name => caches.delete(name)));
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(reg => reg.update()));
+    localStorage.setItem(key, "1");
+    if (navigator.serviceWorker.controller) location.reload();
+  } catch (error) {
+    localStorage.setItem(key, "1");
+  }
+}
+
+async function refreshMarketDataOnOpen() {
+  const box = document.getElementById("openUpdateStatus");
+  if (!box) return;
+  if (!/^https?:$/.test(location.protocol)) {
+    box.textContent = "直接打开HTML时不会自动联网更新；需要通过本地服务打开。";
+    return;
+  }
+  if (location.hostname.endsWith("github.io")) {
+    try {
+      await reloadMarketDataScript();
+      box.textContent = `已读取最新市场数据：${AUTO.updatedAt || "完成"}`;
+      render();
+    } catch (error) {
+      box.textContent = "市场数据刷新失败，可稍后再打开或重新上传 market-data.js。";
+    }
+    return;
+  }
+  box.textContent = "正在打开时更新市场数据...";
+  try {
+    const response = await fetch("/api/update-market", { cache: "no-store" });
+    if (!response.ok) throw new Error("更新接口返回失败");
+    const result = await response.json();
+    if (!result.ok) throw new Error(result.message || "更新失败");
+
+    await reloadMarketDataScript();
+    box.textContent = `已更新到最新数据：${AUTO.updatedAt || "完成"}`;
+    render();
+  } catch (error) {
+    box.textContent = "打开时自动更新失败，可稍后刷新或手动运行更新脚本。";
+  }
+}
+
+function reloadMarketDataScript() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "market-data.js?v=" + Date.now();
+    script.onload = () => {
+      Object.keys(AUTO).forEach(k => delete AUTO[k]);
+      Object.assign(AUTO, window.AUTO_MARKET_DATA || {});
+      resolve();
+    };
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
+}
 </script>
 </body>
 </html>

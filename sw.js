@@ -1,8 +1,5 @@
-const CACHE_NAME = "investment-system-v1";
+const CACHE_NAME = "investment-system-v3";
 const APP_SHELL = [
-  "./",
-  "./investment_system.html",
-  "./market-data.js",
   "./manifest.webmanifest",
   "./app-icon.svg"
 ];
@@ -25,6 +22,17 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+  const requestUrl = new URL(event.request.url);
+  if (
+    requestUrl.pathname.endsWith("/") ||
+    requestUrl.pathname.endsWith("/investment_system.html") ||
+    requestUrl.pathname.endsWith("/index.html") ||
+    requestUrl.pathname.endsWith("/market-data.js") ||
+    requestUrl.pathname.startsWith("/api/")
+  ) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
