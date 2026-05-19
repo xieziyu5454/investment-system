@@ -1720,13 +1720,22 @@ async function refreshMarketDataOnOpen() {
 }
 
 async function fetchCloudMarketData(url) {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error("接口返回失败 " + response.status);
-  const data = await response.json();
-  if (!data || !Array.isArray(data.margin) || !Array.isArray(data.pe)) throw new Error("接口数据格式不对");
-  Object.keys(AUTO).forEach(k => delete AUTO[k]);
-  Object.assign(AUTO, data);
-  window.AUTO_MARKET_DATA = data;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+    if (!response.ok) throw new Error("接口返回失败 " + response.status);
+    const data = await response.json();
+    if (!data || !Array.isArray(data.margin) || !Array.isArray(data.pe)) throw new Error("接口数据格式不对");
+    Object.keys(AUTO).forEach(k => delete AUTO[k]);
+    Object.assign(AUTO, data);
+    window.AUTO_MARKET_DATA = data;
+  } catch (error) {
+    if (error && error.name === "AbortError") throw new Error("云端接口超时");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function reloadMarketDataScript() {

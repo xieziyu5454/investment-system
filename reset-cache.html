@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重置投资系统缓存</title>
+<style>
+  body {
+    margin: 0;
+    padding: 28px 18px;
+    background: #f6f7f8;
+    color: #18201d;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.7;
+  }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 24px; line-height: 1.25; margin: 0 0 12px; }
+  .box {
+    margin-top: 16px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #dce4df;
+    border-radius: 8px;
+  }
+  a, button {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #101828;
+    background: #101828;
+    color: #fff;
+    font: inherit;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
+  }
+  .muted { color: #65736c; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>重置投资系统缓存</h1>
+  <div class="box">
+    <div id="status">正在清理旧缓存...</div>
+    <button id="resetBtn" type="button">重新清理一次</button>
+    <a href="investment_system.html?v=20260518-reset">打开投资系统</a>
+  </div>
+  <p class="muted">这只会清理网页程序缓存，不会删除你在投资系统里录入的交易日志和资产快照。</p>
+</main>
+<script>
+async function resetCache() {
+  const status = document.getElementById("status");
+  status.textContent = "正在清理旧缓存...";
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg => reg.unregister()));
+    }
+    if ("caches" in window) {
+      const names = await caches.keys();
+      await Promise.all(names.map(name => caches.delete(name)));
+    }
+    localStorage.removeItem("investment_cache_cleared_v2");
+    localStorage.removeItem("investment_cache_cleared_v3");
+    localStorage.removeItem("investment_cloud_update_url");
+    status.textContent = "清理完成。请点下面按钮打开投资系统。";
+  } catch (error) {
+    status.textContent = "清理时遇到问题。请继续点下面按钮打开投资系统，或到 Safari 设置里清除网站数据。";
+  }
+}
+document.getElementById("resetBtn").addEventListener("click", resetCache);
+resetCache();
+</script>
+</body>
+</html>
