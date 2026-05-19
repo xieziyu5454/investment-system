@@ -151,7 +151,7 @@
     box-shadow: var(--shadow);
   }
   details.optional summary { cursor: pointer; font-weight: 700; }
-  #sentimentTable, #tradeTable, #snapshotTable, #sentimentMaterialTable, #aiAssessmentTable {
+  #sentimentTable, #tradeTable, #snapshotTable, #sentimentMaterialTable, #aiAssessmentTable, #signalHistoryTable {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -247,6 +247,16 @@
         <div class="small" id="goldSignalText">--</div>
       </div>
     </div>
+    <div class="grid cols-2" style="margin-top:14px">
+      <div class="card">
+        <div class="label">交易前确认清单</div>
+        <div id="preTradeChecklist" class="small">暂无需要复核的买卖信号。</div>
+      </div>
+      <div class="card">
+        <div class="label">仓位上限提醒</div>
+        <div id="allocationWarningBox" class="small">等待资产快照。</div>
+      </div>
+    </div>
     <div class="card" style="margin-top:14px">
       <div class="label">最新AI舆情结论</div>
       <div class="decision" id="aiDecisionBox">还没有保存AI评估结论。</div>
@@ -314,6 +324,12 @@
         <div><button onclick="addTrade()">保存交易</button></div>
       </div>
       <div style="margin-top:10px"><label class="small">备注</label><textarea id="tradeNote" placeholder="例如：温度 28%，PE 13.2，按计划加仓。"></textarea></div>
+      <div class="form-grid" style="margin-top:10px">
+        <div><label class="small">是否按计划执行</label><select id="tradePlanned"><option>是</option><option>否</option><option>不确定</option></select></div>
+        <div><label class="small">当时状态</label><select id="tradeMindset"><option>冷静</option><option>犹豫</option><option>冲动</option><option>压力大</option></select></div>
+        <div><label class="small">复盘标签</label><select id="tradeReviewTag"><option>待观察</option><option>规则有效</option><option>执行偏差</option><option>需要复盘</option></select></div>
+        <div><label class="small">复盘日期</label><input type="date" id="tradeReviewDate"></div>
+      </div>
     </div>
     <div class="card" style="margin-top:14px">
       <div class="label">交易日志</div>
@@ -345,6 +361,11 @@
       <div class="card"><div class="label">情绪买入收益率</div><div class="medium" id="statEmotionReturn">--</div><div class="small" id="statEmotionDetail">--</div></div>
       <div class="card"><div class="label">同期模拟定投收益率</div><div class="medium" id="statDcaReturn">--</div><div class="small" id="statDcaDetail">--</div></div>
       <div class="card"><div class="label">情绪买入相对定投</div><div class="medium" id="statEmotionVsDca">--</div><div class="small">只统计沪深300ETF的情绪/回撤买入记录。</div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="label">策略健康度</div>
+      <div class="medium" id="strategyHealthScore">--</div>
+      <div class="small" id="strategyHealthDetail">等待交易日志和资产快照。</div>
     </div>
     <div class="card" style="margin-top:14px">
       <div class="label">资产快照</div>
@@ -464,7 +485,7 @@
   <section class="view" id="backup">
     <div class="card">
       <div class="label">数据备份</div>
-      <div class="small">所有手动记录都保存在这个浏览器里。建议每月导出一次备份。</div>
+      <div class="small" id="backupStatus">所有手动记录都保存在这个浏览器里。建议每月导出一次备份。</div>
       <div class="actions">
         <button onclick="exportData()">导出备份文件</button>
         <button class="secondary" onclick="document.getElementById('importFile').click()">导入备份文件</button>
@@ -473,10 +494,25 @@
       <input class="hide" type="file" id="importFile" accept="application/json" onchange="importData(event)">
     </div>
     <div class="card" style="margin-top:14px">
+      <div class="label">信号历史</div>
+      <div class="small">系统会每天保留一条信号快照，用来复盘“当时有没有提示、我有没有执行”。</div>
+      <div id="signalHistoryTable" style="margin-top:10px"></div>
+    </div>
+    <div class="card" style="margin-top:14px">
       <div class="label">自动更新说明</div>
       <div class="small">
-        如果通过 <b>start_investment_system.ps1</b> 启动本地服务，每次打开或刷新网页都会尝试更新数据。直接双击 HTML 文件时，网页只能读取本地已有的 <b>market-data.js</b>。
+        设置免费的 Cloudflare Workers 云端更新接口后，iPhone 每次打开都会尝试自动读取最新市场数据。没有设置时，网页会读取 GitHub 上已有的 <b>market-data.js</b>。
       </div>
+      <div style="margin-top:12px">
+        <label class="small">云端更新接口地址</label>
+        <input id="cloudUpdateUrl" placeholder="例如：https://你的worker.workers.dev/">
+      </div>
+      <div class="actions">
+        <button onclick="saveCloudUpdateUrl()">保存接口地址</button>
+        <button class="secondary" onclick="updateFromCloudNow()">立即更新市场数据</button>
+        <button class="secondary" onclick="clearCloudUpdateUrl()">清除接口地址</button>
+      </div>
+      <div class="small" id="cloudUpdateStatus" style="margin-top:8px"></div>
     </div>
   </section>
 </div>
@@ -486,6 +522,7 @@
 const KEY = "a_share_investment_system_v1";
 const OLD_MARGIN_KEY = "margin_data_v3";
 const OLD_PE_KEY = "pe_data_v1";
+const CLOUD_UPDATE_URL_KEY = "investment_cloud_update_url";
 const AUTO = window.AUTO_MARKET_DATA || { margin: [], pe: [], hs300: [], etf300: [], gold: [], signals: null, updatedAt: "", sources: {} };
 
 function today() { return new Date().toISOString().slice(0, 10); }
@@ -495,7 +532,7 @@ function num(n, d = 2) { return Number.isFinite(n) ? Number(n).toFixed(d) : "--"
 function dateFromCsindex(v) { return String(v).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3"); }
 
 function loadState() {
-  const blank = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], settings: { goldAnchorDate: "", goldThirdAmount: 30000 } };
+  const blank = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], settings: { goldAnchorDate: "", goldThirdAmount: 30000 }, meta: { lastBackupDate: "" } };
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
     if (saved) return { ...blank, ...saved };
@@ -677,6 +714,9 @@ function render() {
   box.textContent = decision.text;
   renderSellCooldown();
   renderSignalCards(lastSnap);
+  recordSignalSnapshot();
+  renderPreTradeChecklist(lastSnap);
+  renderAllocationWarnings(lastSnap);
   renderAiDecision();
   renderSnapshotAutoIndex();
 
@@ -695,6 +735,8 @@ function render() {
   renderTrades();
   renderSnapshots();
   renderStats();
+  renderBackupStatus();
+  renderSignalHistory();
   drawLine("tempChart", sentimentSeries(), "temp", "#176b43", "情绪温度");
   drawLine("marginChart", margin, "value", "#2563eb", "融资余额（亿元）");
   drawLine("peChart", pe, "value", "#b7791f", "沪深300 PE");
@@ -1088,6 +1130,93 @@ function renderSignalCards(lastSnap) {
   }
 
 }
+function currentSignalSnapshot() {
+  const s = currentSentiment();
+  const signals = AUTO.signals || {};
+  const etf = effectiveEtf300Signal();
+  const gold = goldPlanSignal(latestSnapshot());
+  return {
+    date: today(),
+    updatedAt: AUTO.updatedAt || "",
+    temp: s ? s.temp : null,
+    pe: s ? s.pe : null,
+    hs300Drawdown: signals.hs300 ? Number(signals.hs300.drawdownPct) : null,
+    etfBuy: Boolean(etf && etf.buySignal),
+    etfSell: Boolean(etf && etf.sellSignal),
+    goldBuy: Boolean(gold && gold.buySignal),
+    goldSell: Boolean(gold && gold.sellSignal),
+    reasons: [
+      ...((etf && etf.buyReasons) || []),
+      ...((etf && etf.sellReasons) || []),
+      ...((gold && gold.reasons) || [])
+    ].slice(0, 8)
+  };
+}
+function recordSignalSnapshot() {
+  const snap = currentSignalSnapshot();
+  state.signalHistory = state.signalHistory || [];
+  const existing = state.signalHistory.findIndex(r => r.date === snap.date);
+  if (existing >= 0) state.signalHistory[existing] = snap;
+  else state.signalHistory.push(snap);
+  state.signalHistory = state.signalHistory.sort((a, b) => a.date.localeCompare(b.date)).slice(-120);
+  saveState();
+}
+function renderPreTradeChecklist(lastSnap) {
+  const target = document.getElementById("preTradeChecklist");
+  if (!target) return;
+  const etf = effectiveEtf300Signal();
+  const gold = goldPlanSignal(lastSnap);
+  const hasSignal = (etf && (etf.buySignal || etf.sellSignal)) || (gold && (gold.buySignal || gold.sellSignal));
+  if (!hasSignal) {
+    target.innerHTML = "暂无需要复核的买卖信号。";
+    return;
+  }
+  const items = [];
+  if (etf && etf.buySignal) {
+    items.push("沪深300ETF买入：确认A/B条件、PE额外加仓、现金/中短债是否足够。");
+    items.push("买入后确认沪深300ETF市值不超过25万上限。");
+  }
+  if (etf && etf.sellSignal) {
+    items.push("沪深300ETF卖出：确认冷却期、再次减仓条件、PE约束和本次比例。");
+    items.push("卖出后资金转入中短债，并在交易日志记录主动/被动减仓原因。");
+  }
+  if (gold && gold.buySignal) items.push("黄金ETF买入：确认第三批规则触发，买入后黄金仓位不超过20%。");
+  if (gold && gold.sellSignal) items.push("黄金ETF再平衡：确认黄金仓位是否确实超过20%。");
+  items.push("执行前先看一眼交易日志，避免重复操作。");
+  target.innerHTML = items.map(x => `<label style="display:block;margin:4px 0"><input type="checkbox" style="width:auto;min-height:auto;margin-right:6px"> ${x}</label>`).join("");
+}
+function renderAllocationWarnings(lastSnap) {
+  const box = document.getElementById("allocationWarningBox");
+  if (!box) return;
+  if (!lastSnap) {
+    box.textContent = "还没有资产快照。建议先记录一次300ETF、黄金ETF、中短债/现金市值。";
+    return;
+  }
+  const totalInvest = investmentTotal(lastSnap);
+  const warnings = [];
+  if (Number(lastSnap.etf300) > 250000) warnings.push(`沪深300ETF市值 ${money(Number(lastSnap.etf300))}，已超过25万上限。`);
+  if (Number.isFinite(totalInvest) && totalInvest > 0) {
+    const goldPct = Number(lastSnap.gold || 0) / totalInvest * 100;
+    const bondPct = Number(lastSnap.bond || 0) / totalInvest * 100;
+    if (goldPct > 20) warnings.push(`黄金ETF约占投资资产 ${num(goldPct, 1)}%，超过20%上限。`);
+    if (bondPct < 10) warnings.push(`中短债/现金约占投资资产 ${num(bondPct, 1)}%，弹药偏低。`);
+  }
+  box.innerHTML = warnings.length ? tags(warnings) : "仓位未见明显越界。";
+}
+function renderSignalHistory() {
+  const target = document.getElementById("signalHistoryTable");
+  if (!target) return;
+  const rows = [...(state.signalHistory || [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
+  target.innerHTML = table(["日期", "温度", "沪深300回撤", "300买", "300卖", "黄金买", "主要原因"], rows.map(r => [
+    r.date,
+    r.temp == null ? "--" : r.temp + "%",
+    pct(r.hs300Drawdown),
+    r.etfBuy ? "是" : "否",
+    r.etfSell ? "是" : "否",
+    r.goldBuy ? "是" : "否",
+    escapeHtml((r.reasons || []).join("；")).slice(0, 180)
+  ]));
+}
 function tags(items) {
   return (items || []).map(x => `<span class="tag">${x}</span>`).join("");
 }
@@ -1111,11 +1240,12 @@ function renderSentimentTable(rows) {
 }
 function renderTrades() {
   const rows = [...state.trades].sort((a, b) => b.date.localeCompare(a.date));
-  document.getElementById("tradeTable").innerHTML = table(["日期", "品种", "方向", "金额", "原因", "当时温度/PE", "备注", ""], rows.map((r, i) => {
+  document.getElementById("tradeTable").innerHTML = table(["日期", "品种", "方向", "金额", "原因", "当时温度/PE", "复盘", "备注", ""], rows.map((r, i) => {
     const s = sentimentOnOrBefore(r.date);
     const temp = Number.isFinite(Number(r.temp)) ? Number(r.temp) : (s ? Number(s.temp) : null);
     const pe = Number.isFinite(Number(r.pe)) ? Number(r.pe) : (s ? Number(s.pe) : null);
-    return [r.date, r.asset, r.side, money(r.amount), r.reason, `${Number.isFinite(temp) ? temp + "%" : "--"} / ${Number.isFinite(pe) ? num(pe, 2) : "--"}`, r.note || "", `<button class="secondary" onclick="deleteTrade(${i})">删除</button>`];
+    const review = `${r.planned || "--"} / ${r.mindset || "--"} / ${r.reviewTag || "--"}`;
+    return [r.date, r.asset, r.side, money(r.amount), r.reason, `${Number.isFinite(temp) ? temp + "%" : "--"} / ${Number.isFinite(pe) ? num(pe, 2) : "--"}`, review, r.note || "", `<button class="secondary" onclick="deleteTrade(${i})">删除</button>`];
   }));
 }
 function renderSnapshots() {
@@ -1132,6 +1262,7 @@ function renderStats() {
   if (rows.length < 2) {
     clearPortfolioStats();
     renderEmotionVsDcaStats();
+    renderStrategyHealth();
     return;
   }
   const first = rows[0], last = rows[rows.length - 1];
@@ -1140,6 +1271,7 @@ function renderStats() {
   if (!Number.isFinite(firstInvest) || firstInvest <= 0 || !Number.isFinite(lastInvest)) {
     clearPortfolioStats();
     renderEmotionVsDcaStats();
+    renderStrategyHealth();
     return;
   }
   const tr = (lastInvest - firstInvest) / firstInvest * 100;
@@ -1148,6 +1280,7 @@ function renderStats() {
   document.getElementById("statIndexReturn").textContent = pct(ir);
   document.getElementById("statExcessReturn").textContent = Number.isFinite(ir) ? pct(tr - ir) : "--";
   renderEmotionVsDcaStats();
+  renderStrategyHealth();
 }
 function etf300Rows() {
   return (AUTO.etf300 || []).filter(r => Number.isFinite(Number(r.close))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
@@ -1215,6 +1348,29 @@ function renderEmotionVsDcaStats() {
   document.getElementById("statDcaDetail").textContent = `同样投入 ${money(cost)}，模拟每月 ${money(perMonth)}，共 ${months.length} 期。`;
   document.getElementById("statEmotionVsDca").textContent = Number.isFinite(emotionReturn) && Number.isFinite(dcaReturn) ? pct(emotionReturn - dcaReturn) : "--";
 }
+function renderStrategyHealth() {
+  const scoreBox = document.getElementById("strategyHealthScore");
+  const detailBox = document.getElementById("strategyHealthDetail");
+  if (!scoreBox || !detailBox) return;
+  let score = 100;
+  const notes = [];
+  const trades = state.trades || [];
+  const snaps = state.snapshots || [];
+  const lastSnap = latestSnapshot();
+  const lastTrade = trades.length ? [...trades].sort((a, b) => a.date.localeCompare(b.date)).pop() : null;
+  if (!snaps.length) { score -= 25; notes.push("还没有资产快照"); }
+  if (!trades.length) { score -= 20; notes.push("还没有交易日志"); }
+  if (lastSnap && daysBetween(lastSnap.date, today()) > 35) { score -= 15; notes.push("资产快照超过35天未更新"); }
+  if (lastTrade && daysBetween(lastTrade.date, today()) > 60) notes.push("最近60天没有交易记录，这可能是正常的长期持有");
+  const unplanned = trades.filter(t => t.planned === "否" || t.mindset === "冲动").length;
+  if (unplanned) { score -= Math.min(20, unplanned * 5); notes.push(`${unplanned}笔交易标记为非计划或冲动`); }
+  const signalDays = (state.signalHistory || []).length;
+  if (signalDays < 3) { score -= 10; notes.push("信号历史样本还少"); }
+  score = Math.max(0, Math.min(100, score));
+  scoreBox.textContent = score + " 分";
+  scoreBox.style.color = score >= 80 ? "var(--green)" : score >= 60 ? "var(--amber)" : "var(--red)";
+  detailBox.textContent = notes.length ? notes.join("；") : "记录完整，执行纪律状态良好。";
+}
 function table(headers, rows) {
   if (!rows.length) return '<div class="small">暂无记录。</div>';
   return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c ?? ""}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
@@ -1248,6 +1404,10 @@ function addTrade() {
     shares: Number(document.getElementById("tradeShares").value),
     reason: document.getElementById("tradeReason").value,
     note: document.getElementById("tradeNote").value.trim(),
+    planned: document.getElementById("tradePlanned").value,
+    mindset: document.getElementById("tradeMindset").value,
+    reviewTag: document.getElementById("tradeReviewTag").value,
+    reviewDate: document.getElementById("tradeReviewDate").value,
     temp: s ? Number(s.temp) : null,
     pe: s && s.pe != null ? Number(s.pe) : null
   };
@@ -1375,7 +1535,68 @@ function deleteSnapshot(reverseIndex) {
   state.snapshots = state.snapshots.filter(r => r !== target);
   saveState(); render();
 }
+function renderBackupStatus() {
+  const box = document.getElementById("backupStatus");
+  if (!box) return;
+  const last = state.meta && state.meta.lastBackupDate;
+  if (!last) {
+    box.textContent = "还没有记录到备份。建议现在导出一次备份文件。";
+    return;
+  }
+  const days = daysBetween(last, today());
+  box.textContent = days > 30
+    ? `上次备份是 ${last}，已经 ${days} 天，建议导出新备份。`
+    : `上次备份是 ${last}，已过 ${days} 天。`;
+}
+function renderCloudUpdateSettings() {
+  const input = document.getElementById("cloudUpdateUrl");
+  const status = document.getElementById("cloudUpdateStatus");
+  if (!input || !status) return;
+  const url = localStorage.getItem(CLOUD_UPDATE_URL_KEY) || "";
+  input.value = url;
+  status.textContent = url ? "已设置云端更新接口。打开页面时会尝试自动更新市场数据。" : "还没有设置云端更新接口。";
+}
+function normalizeCloudUpdateUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  try {
+    const parsed = new URL(value);
+    if (!/^https?:$/.test(parsed.protocol)) throw new Error("bad protocol");
+    return parsed.href;
+  } catch (error) {
+    return "";
+  }
+}
+function saveCloudUpdateUrl() {
+  const input = document.getElementById("cloudUpdateUrl");
+  const url = normalizeCloudUpdateUrl(input ? input.value : "");
+  if (!url) return alert("请粘贴正确的接口地址，要以 https:// 开头。");
+  localStorage.setItem(CLOUD_UPDATE_URL_KEY, url);
+  renderCloudUpdateSettings();
+  alert("已保存云端更新接口。");
+}
+function clearCloudUpdateUrl() {
+  localStorage.removeItem(CLOUD_UPDATE_URL_KEY);
+  renderCloudUpdateSettings();
+}
+async function updateFromCloudNow() {
+  const status = document.getElementById("cloudUpdateStatus");
+  const url = localStorage.getItem(CLOUD_UPDATE_URL_KEY);
+  if (!url) return alert("请先保存云端更新接口地址。");
+  try {
+    if (status) status.textContent = "正在从云端更新市场数据...";
+    await fetchCloudMarketData(url);
+    if (status) status.textContent = `已更新：${AUTO.updatedAt || "完成"}`;
+    render();
+  } catch (error) {
+    if (status) status.textContent = "云端更新失败：" + error.message;
+    alert("云端更新失败：" + error.message);
+  }
+}
 function exportData() {
+  state.meta = { ...(state.meta || {}), lastBackupDate: today() };
+  saveState();
+  renderBackupStatus();
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -1389,7 +1610,7 @@ function importData(event) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], ...JSON.parse(reader.result) };
+      state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000 }, ...JSON.parse(reader.result) };
       saveState(); render(); alert("导入完成。");
     } catch (e) { alert("导入失败：文件格式不对。"); }
   };
@@ -1397,7 +1618,7 @@ function importData(event) {
 }
 function clearAllUserData() {
   if (!confirm("确定清空所有手动记录吗？自动市场数据不会被删除。")) return;
-  state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], settings: { goldAnchorDate: "", goldThirdAmount: 30000 } };
+  state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000 } };
   saveState(); render();
 }
 function updateInvestTotalHint() {
@@ -1418,7 +1639,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     setTimeout(render, 50);
   });
 });
-["manualMarginDate", "manualPeDate", "tradeDate", "snapDate", "sentimentInputDate", "aiResultDate"].forEach(id => document.getElementById(id).value = today());
+["manualMarginDate", "manualPeDate", "tradeDate", "tradeReviewDate", "snapDate", "sentimentInputDate", "aiResultDate"].forEach(id => document.getElementById(id).value = today());
 ["snapEtf300", "snapGold", "snapBond"].forEach(id => document.getElementById(id).addEventListener("input", updateInvestTotalHint));
 document.getElementById("sentimentText").addEventListener("input", updateLocalSentimentPreview);
 window.addEventListener("resize", () => setTimeout(render, 50));
@@ -1428,12 +1649,13 @@ if ("serviceWorker" in navigator && location.protocol !== "file:") {
   });
 }
 render();
+renderCloudUpdateSettings();
 clearOldAppCacheOnce();
 refreshMarketDataOnOpen();
 
 async function clearOldAppCacheOnce() {
   if (!("caches" in window) || !("serviceWorker" in navigator)) return;
-  const key = "investment_cache_cleared_v3";
+  const key = "investment_cache_cleared_v4";
   if (localStorage.getItem(key)) return;
   try {
     const names = await caches.keys();
@@ -1452,6 +1674,24 @@ async function refreshMarketDataOnOpen() {
   if (!box) return;
   if (!/^https?:$/.test(location.protocol)) {
     box.textContent = "直接打开HTML时不会自动联网更新；需要通过本地服务打开。";
+    return;
+  }
+  const cloudUrl = localStorage.getItem(CLOUD_UPDATE_URL_KEY);
+  if (cloudUrl) {
+    box.textContent = "正在从云端更新市场数据...";
+    try {
+      await fetchCloudMarketData(cloudUrl);
+      box.textContent = `已云端更新：${AUTO.updatedAt || "完成"}`;
+      render();
+    } catch (error) {
+      box.textContent = "云端更新失败，已改用网页内置数据。";
+      if (location.hostname.endsWith("github.io")) {
+        try {
+          await reloadMarketDataScript();
+          render();
+        } catch (fallbackError) {}
+      }
+    }
     return;
   }
   if (location.hostname.endsWith("github.io")) {
@@ -1477,6 +1717,16 @@ async function refreshMarketDataOnOpen() {
   } catch (error) {
     box.textContent = "打开时自动更新失败，可稍后刷新或手动运行更新脚本。";
   }
+}
+
+async function fetchCloudMarketData(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error("接口返回失败 " + response.status);
+  const data = await response.json();
+  if (!data || !Array.isArray(data.margin) || !Array.isArray(data.pe)) throw new Error("接口数据格式不对");
+  Object.keys(AUTO).forEach(k => delete AUTO[k]);
+  Object.assign(AUTO, data);
+  window.AUTO_MARKET_DATA = data;
 }
 
 function reloadMarketDataScript() {
