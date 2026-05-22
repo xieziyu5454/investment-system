@@ -434,10 +434,11 @@
       </div>
       <div class="rule red">
         <b>被动减仓（趋势破坏信号）：</b><br>
-        回撤基准优先使用最近一次主动买入后形成的阶段最高点，不含每月定投。<br>
+        回撤基准优先使用最近一次主动买入点，不含每月定投。<br>
         如果一直没有主动买入、只有定投，则使用过去6个月最高点。<br>
-        从该高点回撤 ≥ 15%，且情绪中性或亢奋、不是悲观时，减当时剩余市值的 1/3，转入中短债。<br>
-        若过去12周内已发生过主动减仓，被动减仓幅度减半，即 1/6。
+        从该基准继续回撤 ≥ 15%，且情绪中性或亢奋、不是悲观时，减当时剩余市值的 1/3，转入中短债。<br>
+        被动减仓执行后，回撤基准重置为减仓当日价格，下次需要从新基准再跌 ≥ 15%。<br>
+        若过去12周内已发生过主动减仓，被动减仓幅度减半，即 1/6。若被动减仓与主动卖出同时满足，以主动卖出规则为准。
       </div>
       <div class="rule red">
         <b>主动卖出触发：</b><br>
@@ -459,8 +460,15 @@
         3. 当前温度高于上次减仓时的温度，或温度持续 ≥80% 已超过4周。<br>
         页面总览会显示减仓冷却期倒计时。
       </div>
+      <div class="rule blue">
+        <b>定投与主动加仓恢复：</b><br>
+        每月7号定投2000元永不暂停，任何减仓都不影响定投。<br>
+        减仓后，主动加仓需距减仓 ≥4周，且温度回落至80%以下、市场回调超过5%、社媒情绪明显降温三者满足其一。<br>
+        清仓后，定投继续；主动建仓需温度回落至80%以下，并且买入条件A或B任一触发。
+      </div>
       <div class="rule red">
         <b>PE约束与安全阀：</b><br>
+        PE约束只适用于主动减仓，被动减仓不受PE影响。<br>
         PE < 14：减仓幅度减半。<br>
         PE < 12：默认不主动减仓。<br>
         PE < 12 时的例外：温度 >95% 且社交热度满足，允许减仓 10% 作为安全阀。
@@ -802,6 +810,12 @@ function etf300ActiveBuyTrades() {
     .filter(t => t.reason !== "每月定投")
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+function etf300PassiveSellTrades() {
+  return [...(state.trades || [])]
+    .filter(t => String(t.asset || "").includes("沪深300") && t.side === "卖出" && Number(t.amount) > 0)
+    .filter(t => t.reason === "被动减仓" || String(t.note || "").includes("被动减仓"))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
 function normalizeMarketDate(date) {
   const text = String(date || "");
   return text.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3");
@@ -812,26 +826,39 @@ function hs300Rows() {
     .map(r => ({ ...r, date: normalizeMarketDate(r.date), close: Number(r.close), high: Number(r.high) }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+function hs300PriceOnOrAfter(date) {
+  const rows = hs300Rows();
+  return rows.find(r => r.date >= date) || null;
+}
 function passiveDrawdownBasis() {
   const rows = hs300Rows();
   if (!rows.length) return { ready: false, reason: "暂无沪深300行情数据" };
   const latestRow = rows[rows.length - 1];
   const activeBuys = etf300ActiveBuyTrades();
   const lastActiveBuy = activeBuys.length ? activeBuys[activeBuys.length - 1] : null;
+  const passiveSells = etf300PassiveSellTrades();
+  const lastPassiveSell = passiveSells.length ? passiveSells[passiveSells.length - 1] : null;
+  const resetEvent = [lastActiveBuy ? { type: "active-buy", trade: lastActiveBuy } : null, lastPassiveSell ? { type: "passive-sell", trade: lastPassiveSell } : null]
+    .filter(Boolean)
+    .sort((a, b) => a.trade.date.localeCompare(b.trade.date))
+    .pop();
 
-  if (lastActiveBuy) {
-    const stageRows = rows.filter(r => r.date >= lastActiveBuy.date);
-    if (!stageRows.length) return { ready: false, reason: "最近一次主动买入之后暂无沪深300行情数据" };
-    const high = Math.max(...stageRows.map(r => Number.isFinite(r.high) ? r.high : r.close));
+  if (resetEvent) {
+    const basisRow = hs300PriceOnOrAfter(resetEvent.trade.date);
+    if (!basisRow) return { ready: false, reason: "回撤基准日之后暂无沪深300行情数据" };
+    const basisPrice = Number(basisRow.close);
+    const isPassiveReset = resetEvent.type === "passive-sell";
     return {
       ready: true,
-      basis: "active-buy",
-      basisText: `最近一次主动买入后高点（${lastActiveBuy.date} 之后）`,
-      lastActiveBuy,
-      high,
+      basis: resetEvent.type,
+      basisText: isPassiveReset
+        ? `上次被动减仓当日价格（${resetEvent.trade.date}，基准已重置）`
+        : `最近一次主动买入点（${resetEvent.trade.date}，不含定投）`,
+      basisTrade: resetEvent.trade,
+      basisPrice,
       close: latestRow.close,
       currentDate: latestRow.date,
-      drawdown: (latestRow.close - high) / high * 100
+      drawdown: (latestRow.close - basisPrice) / basisPrice * 100
     };
   }
 
@@ -843,7 +870,7 @@ function passiveDrawdownBasis() {
     ready: true,
     basis: "six-month",
     basisText: "过去6个月高点（尚无主动买入记录，仅按定投口径）",
-    high,
+    basisPrice: high,
     close: latestRow.close,
     currentDate: latestRow.date,
     drawdown: (latestRow.close - high) / high * 100
@@ -1177,7 +1204,8 @@ function renderPreTradeChecklist(lastSnap) {
     items.push("买入后确认沪深300ETF市值不超过25万上限。");
   }
   if (etf && etf.sellSignal) {
-    items.push("沪深300ETF卖出：确认冷却期、再次减仓条件、PE约束和本次比例。");
+    items.push("沪深300ETF卖出：若为主动减仓，确认冷却期、再次减仓条件、PE约束和本次比例。");
+    items.push("若为被动减仓，确认回撤基准、是否已从新基准再跌15%，以及是否需重置基准。");
     items.push("卖出后资金转入中短债，并在交易日志记录主动/被动减仓原因。");
   }
   if (gold && gold.buySignal) items.push("黄金ETF买入：确认第三批规则触发，买入后黄金仓位不超过20%。");
@@ -1707,15 +1735,20 @@ async function refreshMarketDataOnOpen() {
   box.textContent = "正在打开时更新市场数据...";
   try {
     const response = await fetch("/api/update-market", { cache: "no-store" });
-    if (!response.ok) throw new Error("更新接口返回失败");
-    const result = await response.json();
+    const result = await response.json().catch(() => ({ ok: false, message: "更新接口返回失败" }));
     if (!result.ok) throw new Error(result.message || "更新失败");
 
     await reloadMarketDataScript();
     box.textContent = `已更新到最新数据：${AUTO.updatedAt || "完成"}`;
     render();
   } catch (error) {
-    box.textContent = "打开时自动更新失败，可稍后刷新或手动运行更新脚本。";
+    try {
+      await reloadMarketDataScript();
+      render();
+      box.textContent = `本次联网更新失败，已继续使用本地数据：${AUTO.updatedAt || "暂无更新时间"}`;
+    } catch (fallbackError) {
+      box.textContent = "打开时自动更新失败，可稍后刷新或手动运行更新脚本。";
+    }
   }
 }
 
