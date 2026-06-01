@@ -327,8 +327,6 @@
       <div class="form-grid" style="margin-top:10px">
         <div><label class="small">是否按计划执行</label><select id="tradePlanned"><option>是</option><option>否</option><option>不确定</option></select></div>
         <div><label class="small">当时状态</label><select id="tradeMindset"><option>冷静</option><option>犹豫</option><option>冲动</option><option>压力大</option></select></div>
-        <div><label class="small">复盘标签</label><select id="tradeReviewTag"><option>待观察</option><option>规则有效</option><option>执行偏差</option><option>需要复盘</option></select></div>
-        <div><label class="small">复盘日期</label><input type="date" id="tradeReviewDate"></div>
       </div>
     </div>
     <div class="card" style="margin-top:14px">
@@ -344,8 +342,9 @@
         <div><label class="small">日期</label><input type="date" id="snapDate"></div>
         <div><label class="small">总资产（元，含应急资金）</label><input type="number" id="snapTotal"></div>
         <div><label class="small">投资资产（元）</label><input type="number" id="snapInvestTotal"><div class="small">用于策略收益统计；不填则自动按下方三项相加。</div></div>
+        <div><label class="small">本期新投入/取出本金（元）</label><input type="number" id="snapContribution" value="0"><div class="small">从上次快照到这次快照，真正新放进或拿出投资系统的钱；取出填负数。</div></div>
         <div><label class="small">300ETF市值（元）</label><input type="number" id="snapEtf300"></div>
-        <div><label class="small">黄金ETF市值（元）</label><input type="number" id="snapGold"></div>
+        <div><label class="small">黄金ETF市值（元）</label><input type="number" id="snapGold"><div class="small" id="snapGoldHint"></div></div>
         <div><label class="small">中短债/现金（元）</label><input type="number" id="snapBond"></div>
         <div><label class="small">沪深300点位</label><input type="number" id="snapIndex" step="0.01"><div class="small" id="snapIndexHint"></div></div>
         <div><label class="small">备注</label><input id="snapNote"></div>
@@ -353,9 +352,9 @@
       </div>
     </div>
     <div class="grid cols-3" style="margin-top:14px">
-      <div class="card"><div class="label">投资资产变化率（简化）</div><div class="medium" id="statTotalReturn">--</div><div class="small">按快照首尾计算，未扣除中途新增投入。</div></div>
-      <div class="card"><div class="label">同期沪深300</div><div class="medium" id="statIndexReturn">--</div></div>
-      <div class="card"><div class="label">相对表现</div><div class="medium" id="statExcessReturn">--</div></div>
+      <div class="card"><div class="label">投资资产规模变化</div><div class="medium" id="statTotalReturn">--</div><div class="small" id="statTotalDetail">包含本期新投入/取出本金。</div></div>
+      <div class="card"><div class="label">扣除投入后收益率</div><div class="medium" id="statNetReturn">--</div><div class="small" id="statNetDetail">按资产快照的本期新投入/取出本金扣除。</div></div>
+      <div class="card"><div class="label">相对沪深300</div><div class="medium" id="statExcessReturn">--</div><div class="small" id="statIndexReturn">同期沪深300：--</div></div>
     </div>
     <div class="grid cols-3" style="margin-top:14px">
       <div class="card"><div class="label">情绪买入收益率</div><div class="medium" id="statEmotionReturn">--</div><div class="small" id="statEmotionDetail">--</div></div>
@@ -535,20 +534,26 @@ const OLD_PE_KEY = "pe_data_v1";
 const CLOUD_UPDATE_URL_KEY = "investment_cloud_update_url";
 const AUTO = window.AUTO_MARKET_DATA || { margin: [], pe: [], hs300: [], etf300: [], gold: [], signals: null, updatedAt: "", sources: {} };
 
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 function money(n) { return Number.isFinite(n) ? Math.round(n).toLocaleString() : "--"; }
 function pct(n) { return Number.isFinite(n) ? n.toFixed(2) + "%" : "--"; }
 function num(n, d = 2) { return Number.isFinite(n) ? Number(n).toFixed(d) : "--"; }
 function dateFromCsindex(v) { return String(v).replace(/^(\d{4})(\d{2})(\d{2})$/, "$1-$2-$3"); }
 
 function loadState() {
-  const blank = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], settings: { goldAnchorDate: "", goldThirdAmount: 30000 }, meta: { lastBackupDate: "" } };
+  const blank = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], settings: { goldAnchorDate: "", goldThirdAmount: 30000, goldCurrentShares: 9400 }, meta: { lastBackupDate: "" } };
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (saved) return { ...blank, ...saved };
+    if (saved) return { ...blank, ...saved, settings: { ...blank.settings, ...(saved.settings || {}) } };
   } catch (e) {}
   const migrated = migrateOldData(blank);
-  migrated.settings = { goldAnchorDate: "", goldThirdAmount: 30000, ...(migrated.settings || {}) };
+  migrated.settings = { goldAnchorDate: "", goldThirdAmount: 30000, goldCurrentShares: 9400, ...(migrated.settings || {}) };
   return migrated;
 }
 function saveState() { localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -729,6 +734,7 @@ function render() {
   renderAllocationWarnings(lastSnap);
   renderAiDecision();
   renderSnapshotAutoIndex();
+  renderSnapshotAutoGold();
 
   document.getElementById("tempNum").textContent = s ? s.temp + "%" : "--";
   document.getElementById("tempNum").style.color = colorForTemp(s && s.temp);
@@ -756,6 +762,45 @@ function latestHs300Close() {
   const rows = (AUTO.hs300 || []).filter(r => Number.isFinite(Number(r.close))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
   return rows.length ? rows[rows.length - 1] : null;
 }
+function latestGoldClose() {
+  const rows = (AUTO.gold || []).filter(r => Number.isFinite(Number(r.close))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  return rows.length ? { ...rows[rows.length - 1], close: Number(rows[rows.length - 1].close) } : null;
+}
+function goldRows() {
+  return (AUTO.gold || [])
+    .filter(r => Number.isFinite(Number(r.close)))
+    .map(r => ({ ...r, date: normalizeMarketDate(r.date), close: Number(r.close), high: Number(r.high) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+function goldPriceOnOrBefore(date) {
+  const rows = goldRows().filter(r => r.date <= date);
+  return rows.length ? rows[rows.length - 1] : null;
+}
+function goldSharesForTrade(t) {
+  const explicit = Number(t.shares);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const price = Number.isFinite(Number(t.price)) && Number(t.price) > 0 ? Number(t.price) : Number((goldPriceOnOrBefore(t.date) || {}).close);
+  return price > 0 ? Number(t.amount) / price : 0;
+}
+function estimatedGoldHolding() {
+  const latestPrice = latestGoldClose();
+  if (!latestPrice) return null;
+  const manualShares = Number((state.settings || {}).goldCurrentShares);
+  const tradeShares = [...(state.trades || [])]
+    .filter(t => String(t.asset || "").includes("黄金") && Number(t.amount) > 0)
+    .reduce((sum, t) => {
+      const side = t.side === "卖出" ? -1 : t.side === "买入" || t.side === "定投" ? 1 : 0;
+      return sum + side * goldSharesForTrade(t);
+    }, 0);
+  const shares = Number.isFinite(manualShares) && manualShares > 0 ? manualShares : tradeShares;
+  if (!Number.isFinite(shares) || shares <= 0) return null;
+  return {
+    shares,
+    price: latestPrice.close,
+    date: normalizeMarketDate(latestPrice.date),
+    value: shares * latestPrice.close
+  };
+}
 function renderSnapshotAutoIndex() {
   const input = document.getElementById("snapIndex");
   const hint = document.getElementById("snapIndexHint");
@@ -767,6 +812,18 @@ function renderSnapshotAutoIndex() {
   }
   if (!input.value) input.value = Number(latestIndex.close).toFixed(2);
   hint.textContent = `自动带出：${latestIndex.date} 收盘 ${Number(latestIndex.close).toFixed(2)}，可手动修改。`;
+}
+function renderSnapshotAutoGold() {
+  const input = document.getElementById("snapGold");
+  const hint = document.getElementById("snapGoldHint");
+  if (!input || !hint) return;
+  const est = estimatedGoldHolding();
+  if (!est) {
+    hint.textContent = "如在交易日志填写黄金ETF份额，系统可自动估算市值。";
+    return;
+  }
+  if (!input.value || Number(input.value) <= 0) input.value = Math.round(est.value);
+  hint.textContent = `自动估算：${num(est.shares, 2)} 份 × ${est.date} 收盘 ${num(est.price, 3)} ≈ ${money(est.value)} 元，可手动修改。`;
 }
 function latestAiAssessment() {
   const rows = [...(state.aiAssessments || [])].sort((a, b) => a.date.localeCompare(b.date));
@@ -905,7 +962,7 @@ function sellCooldownStatus() {
   const rows = etf300SellTrades();
   if (!rows.length) return { hasSell: false };
   const lastSell = rows[rows.length - 1];
-  const currentDate = (AUTO.signals && AUTO.signals.sentiment && AUTO.signals.sentiment.date) || today();
+  const currentDate = today();
   const elapsedDays = Math.max(0, daysBetween(lastSell.date, currentDate));
   const elapsedWeeks = elapsedDays / 7;
   const earliestDate = shiftDate(lastSell.date, 42);
@@ -938,7 +995,7 @@ function formatRate(rate) {
 }
 function activeEtf300SellPlan(base, temp, ai) {
   const current = currentSentiment();
-  const currentDate = (current && current.date) || (AUTO.signals && AUTO.signals.sentiment && AUTO.signals.sentiment.date) || today();
+  const currentDate = today();
   const currentPe = current && current.pe != null ? Number(current.pe) : (AUTO.signals && AUTO.signals.sentiment ? Number(AUTO.signals.sentiment.pe) : null);
   const aiMedia = ai && ai.mediaNarrative === "是";
   const hasExplicitSocial = ai && (ai.socialHeat === "是" || ai.socialHeat === "否");
@@ -1032,7 +1089,7 @@ function passiveEtf300SellPlan(temp) {
   };
 }
 function etf300BuyControl(base, temp, ai) {
-  const currentDate = (AUTO.signals && AUTO.signals.sentiment && AUTO.signals.sentiment.date) || today();
+  const currentDate = today();
   const rawBuySignal = Boolean(base.buySignal);
   const buyReasons = [...(base.buyReasons || [])];
   let buySignal = rawBuySignal;
@@ -1162,12 +1219,18 @@ function renderSellCooldown() {
 }
 function goldPlanSignal(lastSnap) {
   const settings = state.settings || {};
+  const goldEstimate = estimatedGoldHolding();
+  const snapGoldValue = lastSnap ? Number(lastSnap.gold || 0) : 0;
+  const effectiveGoldValue = goldEstimate && Number.isFinite(goldEstimate.value) ? goldEstimate.value : snapGoldValue;
+  const effectiveTotal = lastSnap && Number(lastSnap.total) > 0
+    ? Math.max(0, Number(lastSnap.total) - snapGoldValue + effectiveGoldValue)
+    : null;
   const goldBuys = [...(state.trades || [])]
     .filter(t => String(t.asset || "").includes("黄金") && t.side === "买入" && Number(t.amount) > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
   const goldBuyAmount = goldBuys.reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  const goldAllocation = lastSnap && lastSnap.total ? lastSnap.gold / lastSnap.total * 100 : null;
-  const goldMarketValue = lastSnap ? Number(lastSnap.gold || 0) : 0;
+  const goldAllocation = effectiveTotal ? effectiveGoldValue / effectiveTotal * 100 : null;
+  const goldMarketValue = effectiveGoldValue;
   const isFullPosition = goldBuys.length >= 3 || goldBuyAmount >= 90000 || goldMarketValue >= 85000 || goldAllocation >= 8;
   const sellByAllocation = Number.isFinite(goldAllocation) && goldAllocation > 20;
   const buyByAllocation = Number.isFinite(goldAllocation) && goldAllocation < 8;
@@ -1180,12 +1243,15 @@ function goldPlanSignal(lastSnap) {
       goldBuys,
       goldBuyAmount,
       goldMarketValue,
+      goldEstimate,
       goldAllocation,
+      allocationTotal: effectiveTotal,
       reasons: [
         goldBuys.length >= 3 ? "交易日志已记录至少3笔黄金ETF买入" : "",
         goldBuyAmount >= 90000 ? "交易日志黄金ETF累计买入金额已达到9万元" : "",
-        goldMarketValue >= 85000 ? "资产快照黄金ETF市值已接近9万元目标仓位" : "",
-        goldAllocation >= 8 ? "资产快照黄金仓位已达到8%以上，按三批完成后的再平衡规则处理" : "",
+        goldEstimate ? "按交易日志份额和最新518880价格估算黄金ETF市值" : "",
+        !goldEstimate && goldMarketValue >= 85000 ? "资产快照黄金ETF市值已接近9万元目标仓位" : "",
+        goldAllocation >= 8 ? "黄金仓位已达到8%以上，按三批完成后的再平衡规则处理" : "",
         sellByAllocation ? "黄金仓位超过20%，按计划考虑适当减仓" : "",
         buyByAllocation ? "黄金仓位低于8%，按计划考虑补仓" : "",
         Number.isFinite(goldAllocation) && goldAllocation >= 10 && goldAllocation <= 15 ? "黄金仓位在10%-15%目标区间" : "",
@@ -1221,7 +1287,9 @@ function goldPlanSignal(lastSnap) {
     high,
     drawdown,
     days,
+    goldEstimate,
     goldAllocation,
+    allocationTotal: effectiveTotal,
     reasons: [
       dueByDrawdown ? "第一批买入后高点回撤 >= 10%" : "",
       dueByTime ? "第一批买入已满约3个月" : "",
@@ -1248,7 +1316,10 @@ function renderSignalCards(lastSnap) {
   } else if (etf.sellPlan && (etf.sellPlan.sellCount > 0 || (Number.isFinite(currentTemp) && currentTemp >= 80))) {
     etfCard.className = "card signal-card watch";
     document.getElementById("etf300SignalTitle").textContent = etf.sellPlan.sellCount > 0 ? "暂不满足再次减仓" : "暂不满足主动减仓";
-    document.getElementById("etf300SignalText").innerHTML = `510300 最新 ${num(etf.close, 3)}，当前PE ${num(etf.sellPlan.currentPe, 2)}。<br>${tags(etf.sellReasons)}`;
+    const buyStatus = etf.buyPlan && etf.buyPlan.rawBuySignal
+      ? (etf.buyPlan.buySignal ? "买入条件A/B也已触发，但当前优先显示减仓复核状态；执行前请同时检查是否处于减仓后恢复主动加仓阶段。" : "买入条件A/B已触发，但被恢复主动加仓规则或仓位上限拦截。")
+      : "买入条件A/B当前未触发。";
+    document.getElementById("etf300SignalText").innerHTML = `510300 最新 ${num(etf.close, 3)}，当前PE ${num(etf.sellPlan.currentPe, 2)}。<br>${tags(etf.sellReasons)}<br>${tags([buyStatus])}`;
   } else if (etf.buyPlan && etf.buyPlan.rawBuySignal && !etf.buyPlan.buySignal) {
     etfCard.className = "card signal-card watch";
     document.getElementById("etf300SignalTitle").textContent = "暂不满足恢复主动加仓";
@@ -1264,6 +1335,9 @@ function renderSignalCards(lastSnap) {
   }
 
   const goldCard = document.getElementById("goldSignalCard");
+  const goldValueText = gold && gold.goldEstimate
+    ? `按交易日志估算黄金ETF市值约 ${money(gold.goldMarketValue)} 元（${num(gold.goldEstimate.shares, 2)} 份 × ${num(gold.goldEstimate.price, 3)}，${gold.goldEstimate.date}）。`
+    : "";
   if (!gold.ready) {
     goldCard.className = "card signal-card";
     document.getElementById("goldSignalTitle").textContent = gold.title;
@@ -1272,19 +1346,19 @@ function renderSignalCards(lastSnap) {
     goldCard.className = "card signal-card sell";
     document.getElementById("goldSignalTitle").textContent = gold.phase === "rebalance" ? "出现黄金再平衡卖出提醒" : "出现卖出/再平衡提醒";
     document.getElementById("goldSignalText").textContent = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。黄金仓位约 ${num(gold.goldAllocation, 2)}%，超过20%上限，按计划考虑适当减仓。`
+      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，超过20%上限，按计划考虑适当减仓。`
       : `黄金仓位约 ${num(gold.goldAllocation, 2)}%，超过计划上限 20%，建议检查是否需要再平衡。`;
   } else if (gold.buySignal) {
     goldCard.className = "card signal-card buy";
     document.getElementById("goldSignalTitle").textContent = gold.phase === "rebalance" ? "出现黄金再平衡补仓提醒" : "出现第三批买入提醒";
     document.getElementById("goldSignalText").innerHTML = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。黄金仓位约 ${num(gold.goldAllocation, 2)}%，低于8%补仓线，按计划考虑补仓。<br>${tags(gold.reasons)}`
+      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，低于8%补仓线，按计划考虑补仓。<br>${tags(gold.reasons)}`
       : `计划金额约 ${money(gold.amount)} 元。第一批记录日 ${gold.anchorDate}，518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。<br>${tags(gold.reasons)}`;
   } else {
     goldCard.className = "card signal-card ok";
     document.getElementById("goldSignalTitle").textContent = "暂无买卖信号";
     document.getElementById("goldSignalText").textContent = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前按长期持有与再平衡规则观察。目标区间10%-15%，低于8%才考虑补仓，高于20%才考虑减仓。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : "请先在资产快照里填写总资产和黄金ETF市值。"}`
+      ? `黄金三批已买入，当前按长期持有与再平衡规则观察。目标区间10%-15%，低于8%才考虑补仓，高于20%才考虑减仓。${goldValueText}${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : "请先在资产快照里填写总资产和黄金ETF市值。"}`
       : `第一批记录日 ${gold.anchorDate}。518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : ""}`;
   }
 
@@ -1403,22 +1477,26 @@ function renderSentimentTable(rows) {
 }
 function renderTrades() {
   const rows = [...state.trades].sort((a, b) => b.date.localeCompare(a.date));
-  document.getElementById("tradeTable").innerHTML = table(["日期", "品种", "方向", "金额", "原因", "当时温度/PE", "复盘", "备注", ""], rows.map((r, i) => {
+  document.getElementById("tradeTable").innerHTML = table(["日期", "品种", "方向", "金额", "原因", "当时温度/PE", "执行记录", "复盘", "备注", ""], rows.map((r, i) => {
     const s = sentimentOnOrBefore(r.date);
     const temp = Number.isFinite(Number(r.temp)) ? Number(r.temp) : (s ? Number(s.temp) : null);
     const pe = Number.isFinite(Number(r.pe)) ? Number(r.pe) : (s ? Number(s.pe) : null);
-    const review = `${r.planned || "--"} / ${r.mindset || "--"} / ${r.reviewTag || "--"}`;
-    return [r.date, r.asset, r.side, money(r.amount), r.reason, `${Number.isFinite(temp) ? temp + "%" : "--"} / ${Number.isFinite(pe) ? num(pe, 2) : "--"}`, review, r.note || "", `<button class="secondary" onclick="deleteTrade(${i})">删除</button>`];
+    const execute = `${r.planned || "--"} / ${r.mindset || "--"}`;
+    const review = r.reviewTag ? `${r.reviewTag}${r.reviewDate ? "（" + r.reviewDate + "）" : ""}` : "未复盘";
+    return [r.date, r.asset, r.side, money(r.amount), r.reason, `${Number.isFinite(temp) ? temp + "%" : "--"} / ${Number.isFinite(pe) ? num(pe, 2) : "--"}`, execute, review, r.note || "", `<button class="secondary" onclick="reviewTrade(${i})">复盘</button> <button class="secondary" onclick="deleteTrade(${i})">删除</button>`];
   }));
 }
 function renderSnapshots() {
   const rows = [...state.snapshots].sort((a, b) => b.date.localeCompare(a.date));
-  document.getElementById("snapshotTable").innerHTML = table(["日期", "总资产", "投资资产", "300ETF", "黄金", "中短债/现金", "沪深300", "备注", ""], rows.map((r, i) => [r.date, money(r.total), money(investmentTotal(r)), money(r.etf300), money(r.gold), money(r.bond), num(r.indexLevel, 2), r.note || "", `<button class="secondary" onclick="deleteSnapshot(${i})">删除</button>`]));
+  document.getElementById("snapshotTable").innerHTML = table(["日期", "总资产", "投资资产", "本期投入/取出", "300ETF", "黄金", "中短债/现金", "沪深300", "备注", ""], rows.map((r, i) => [r.date, money(r.total), money(investmentTotal(r)), money(Number(r.contribution || 0)), money(r.etf300), money(r.gold), money(r.bond), num(r.indexLevel, 2), r.note || "", `<button class="secondary" onclick="deleteSnapshot(${i})">删除</button>`]));
 }
 function renderStats() {
   const rows = [...state.snapshots].sort((a, b) => a.date.localeCompare(b.date));
   const clearPortfolioStats = () => {
     document.getElementById("statTotalReturn").textContent = "--";
+    document.getElementById("statTotalDetail").textContent = "需要至少两次资产快照。";
+    document.getElementById("statNetReturn").textContent = "--";
+    document.getElementById("statNetDetail").textContent = "需要在资产快照里填写本期新投入/取出本金。";
     document.getElementById("statIndexReturn").textContent = "--";
     document.getElementById("statExcessReturn").textContent = "--";
   };
@@ -1437,11 +1515,18 @@ function renderStats() {
     renderStrategyHealth();
     return;
   }
+  const externalFlows = rows
+    .filter(r => r.date > first.date && r.date <= last.date)
+    .reduce((sum, r) => sum + Number(r.contribution || 0), 0);
   const tr = (lastInvest - firstInvest) / firstInvest * 100;
+  const netReturn = (lastInvest - firstInvest - externalFlows) / firstInvest * 100;
   const ir = first.indexLevel && last.indexLevel ? (last.indexLevel - first.indexLevel) / first.indexLevel * 100 : NaN;
   document.getElementById("statTotalReturn").textContent = pct(tr);
-  document.getElementById("statIndexReturn").textContent = pct(ir);
-  document.getElementById("statExcessReturn").textContent = Number.isFinite(ir) ? pct(tr - ir) : "--";
+  document.getElementById("statTotalDetail").textContent = `从 ${money(firstInvest)} 到 ${money(lastInvest)}，含本期净投入 ${money(externalFlows)}。`;
+  document.getElementById("statNetReturn").textContent = pct(netReturn);
+  document.getElementById("statNetDetail").textContent = `收益约 ${money(lastInvest - firstInvest - externalFlows)}，已扣除本期净投入 ${money(externalFlows)}。`;
+  document.getElementById("statIndexReturn").textContent = `同期沪深300：${pct(ir)}`;
+  document.getElementById("statExcessReturn").textContent = Number.isFinite(ir) ? pct(netReturn - ir) : "--";
   renderEmotionVsDcaStats();
   renderStrategyHealth();
 }
@@ -1569,8 +1654,8 @@ function addTrade() {
     note: document.getElementById("tradeNote").value.trim(),
     planned: document.getElementById("tradePlanned").value,
     mindset: document.getElementById("tradeMindset").value,
-    reviewTag: document.getElementById("tradeReviewTag").value,
-    reviewDate: document.getElementById("tradeReviewDate").value,
+    reviewTag: "",
+    reviewDate: "",
     temp: s ? Number(s.temp) : null,
     pe: s && s.pe != null ? Number(s.pe) : null
   };
@@ -1582,6 +1667,7 @@ function addSnapshot() {
     date: document.getElementById("snapDate").value,
     total: Number(document.getElementById("snapTotal").value),
     investTotal: Number(document.getElementById("snapInvestTotal").value),
+    contribution: Number(document.getElementById("snapContribution").value || 0),
     etf300: Number(document.getElementById("snapEtf300").value || 0),
     gold: Number(document.getElementById("snapGold").value || 0),
     bond: Number(document.getElementById("snapBond").value || 0),
@@ -1693,6 +1779,18 @@ function deleteTrade(reverseIndex) {
   state.trades = state.trades.filter(r => r !== target);
   saveState(); render();
 }
+function reviewTrade(reverseIndex) {
+  const rows = [...state.trades].sort((a, b) => b.date.localeCompare(a.date));
+  const target = rows[reverseIndex];
+  if (!target) return;
+  const tag = prompt("复盘标签：可填 规则有效 / 执行偏差 / 需要复盘 / 待观察", target.reviewTag || "待观察");
+  if (tag === null) return;
+  const date = prompt("复盘日期：", target.reviewDate || today());
+  if (date === null) return;
+  target.reviewTag = tag.trim() || "待观察";
+  target.reviewDate = date.trim() || today();
+  saveState(); render();
+}
 function deleteSnapshot(reverseIndex) {
   const rows = [...state.snapshots].sort((a, b) => b.date.localeCompare(a.date));
   const target = rows[reverseIndex];
@@ -1774,7 +1872,8 @@ function importData(event) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000 }, ...JSON.parse(reader.result) };
+      state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000, goldCurrentShares: 9400 }, ...JSON.parse(reader.result) };
+      state.settings = { goldAnchorDate: "", goldThirdAmount: 30000, goldCurrentShares: 9400, ...(state.settings || {}) };
       saveState(); render(); alert("导入完成。");
     } catch (e) { alert("导入失败：文件格式不对。"); }
   };
@@ -1782,7 +1881,7 @@ function importData(event) {
 }
 function clearAllUserData() {
   if (!confirm("确定清空所有手动记录吗？自动市场数据不会被删除。")) return;
-  state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000 } };
+  state = { manualMargin: [], manualPE: [], trades: [], snapshots: [], sentimentMaterials: [], aiAssessments: [], signalHistory: [], meta: { lastBackupDate: "" }, settings: { goldAnchorDate: "", goldThirdAmount: 30000, goldCurrentShares: 9400 } };
   saveState(); render();
 }
 function updateInvestTotalHint() {
@@ -1803,7 +1902,8 @@ document.querySelectorAll(".tab").forEach(btn => {
     setTimeout(render, 50);
   });
 });
-["manualMarginDate", "manualPeDate", "tradeDate", "tradeReviewDate", "snapDate", "sentimentInputDate", "aiResultDate"].forEach(id => document.getElementById(id).value = today());
+["manualMarginDate", "manualPeDate", "tradeDate", "snapDate", "sentimentInputDate", "aiResultDate"].forEach(id => document.getElementById(id).value = today());
+document.getElementById("snapContribution").value = "0";
 ["snapEtf300", "snapGold", "snapBond"].forEach(id => document.getElementById(id).addEventListener("input", updateInvestTotalHint));
 document.getElementById("sentimentText").addEventListener("input", updateLocalSentimentPreview);
 window.addEventListener("resize", () => setTimeout(render, 50));
