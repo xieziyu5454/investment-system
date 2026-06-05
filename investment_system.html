@@ -320,7 +320,7 @@
         <div><label class="small">金额（元）</label><input type="number" id="tradeAmount" placeholder="例如 2000"></div>
         <div><label class="small">价格</label><input type="number" id="tradePrice" step="0.001"></div>
         <div><label class="small">份额</label><input type="number" id="tradeShares" step="0.01"></div>
-        <div><label class="small">触发原因</label><select id="tradeReason"><option>每月定投</option><option>情绪偏冷</option><option>回撤触发</option><option>情绪偏热</option><option>主动减仓</option><option>被动减仓</option><option>黄金计划</option><option>其他</option></select></div>
+        <div><label class="small">触发原因</label><select id="tradeReason"><option>主动买入</option><option>主动减仓</option><option>被动减仓</option><option>黄金加仓</option><option>黄金减仓</option></select></div>
         <div><button onclick="addTrade()">保存交易</button></div>
       </div>
       <div style="margin-top:10px"><label class="small">备注</label><textarea id="tradeNote" placeholder="例如：温度 28%，PE 13.2，按计划加仓。"></textarea></div>
@@ -863,16 +863,31 @@ function etf300SellTrades() {
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+function isEtfActiveBuyReason(reason) {
+  return ["主动买入", "情绪偏冷", "回撤触发"].includes(reason);
+}
+function isEtfActiveSellReason(reason) {
+  return ["主动减仓", "情绪偏热"].includes(reason);
+}
+function isEtfPassiveSellReason(reason) {
+  return reason === "被动减仓";
+}
+function isGoldBuyReason(reason) {
+  return ["黄金加仓", "黄金计划", "回撤触发"].includes(reason);
+}
+function isGoldSellReason(reason) {
+  return ["黄金减仓", "黄金计划", "主动减仓", "被动减仓"].includes(reason);
+}
 function etf300ActiveBuyTrades() {
   return [...(state.trades || [])]
     .filter(t => String(t.asset || "").includes("沪深300") && t.side === "买入" && Number(t.amount) > 0)
-    .filter(t => t.reason !== "每月定投")
+    .filter(t => isEtfActiveBuyReason(t.reason))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 function etf300PassiveSellTrades() {
   return [...(state.trades || [])]
     .filter(t => String(t.asset || "").includes("沪深300") && t.side === "卖出" && Number(t.amount) > 0)
-    .filter(t => t.reason === "被动减仓" || String(t.note || "").includes("被动减仓"))
+    .filter(t => isEtfPassiveSellReason(t.reason) || String(t.note || "").includes("被动减仓"))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 function normalizeMarketDate(date) {
@@ -1080,7 +1095,7 @@ function passiveEtf300SellPlan(temp) {
   if (!Number.isFinite(temp) || temp <= 30) blockers.push("情绪仍偏悲观，不触发被动减仓");
 
   const recentActiveSell = etf300SellTrades()
-    .filter(t => t.reason === "情绪偏热" || t.reason === "主动减仓" || String(t.note || "").includes("主动减仓"))
+    .filter(t => isEtfActiveSellReason(t.reason) || String(t.note || "").includes("主动减仓"))
     .filter(t => daysBetween(t.date, currentDate) <= 84)
     .pop();
   const rate = recentActiveSell ? 1 / 6 : 1 / 3;
@@ -1385,10 +1400,10 @@ function currentSignalSnapshot() {
   const etfSellDone = etfTrades.some(isSellSide);
   const goldBuyDone = goldTrades.some(isBuySide);
   const goldSellDone = goldTrades.some(isSellSide);
-  const etfBuySignalFromTrade = etfTrades.some(t => isBuySide(t) && ["情绪偏冷", "回撤触发"].includes(t.reason));
-  const etfSellSignalFromTrade = etfTrades.some(t => isSellSide(t) && ["情绪偏热", "主动减仓", "被动减仓"].includes(t.reason));
-  const goldBuySignalFromTrade = goldTrades.some(t => isBuySide(t) && ["黄金计划", "回撤触发"].includes(t.reason));
-  const goldSellSignalFromTrade = goldTrades.some(t => isSellSide(t) && ["黄金计划", "主动减仓", "被动减仓"].includes(t.reason));
+  const etfBuySignalFromTrade = etfTrades.some(t => isBuySide(t) && isEtfActiveBuyReason(t.reason));
+  const etfSellSignalFromTrade = etfTrades.some(t => isSellSide(t) && (isEtfActiveSellReason(t.reason) || isEtfPassiveSellReason(t.reason)));
+  const goldBuySignalFromTrade = goldTrades.some(t => isBuySide(t) && isGoldBuyReason(t.reason));
+  const goldSellSignalFromTrade = goldTrades.some(t => isSellSide(t) && isGoldSellReason(t.reason));
   return {
     date: snapDate,
     updatedAt: AUTO.updatedAt || "",
@@ -1512,10 +1527,10 @@ function tradeDoneOnDate(date, assetKeyword, sideKind) {
 function signalTradeOnDate(date, assetKeyword, sideKind) {
   return (state.trades || []).some(t => {
     const sideOk = sideKind === "buy" ? (t.side === "买入" || t.side === "定投") : t.side === "卖出";
-    const reasons = assetKeyword === "黄金"
-      ? (sideKind === "buy" ? ["黄金计划", "回撤触发"] : ["黄金计划", "主动减仓", "被动减仓"])
-      : (sideKind === "buy" ? ["情绪偏冷", "回撤触发"] : ["情绪偏热", "主动减仓", "被动减仓"]);
-    return t.date === date && String(t.asset || "").includes(assetKeyword) && sideOk && reasons.includes(t.reason);
+    const reasonOk = assetKeyword === "黄金"
+      ? (sideKind === "buy" ? isGoldBuyReason(t.reason) : isGoldSellReason(t.reason))
+      : (sideKind === "buy" ? isEtfActiveBuyReason(t.reason) : (isEtfActiveSellReason(t.reason) || isEtfPassiveSellReason(t.reason)));
+    return t.date === date && String(t.asset || "").includes(assetKeyword) && sideOk && reasonOk;
   });
 }
 function tags(items) {
@@ -1634,7 +1649,7 @@ function renderEmotionVsDcaStats() {
   const latestPrice = Number(rows[rows.length - 1].close);
   const emotionBuys = [...(state.trades || [])]
     .filter(t => String(t.asset || "").includes("沪深300") && t.side === "买入")
-    .filter(t => ["情绪偏冷", "回撤触发"].includes(t.reason))
+    .filter(t => isEtfActiveBuyReason(t.reason))
     .filter(t => Number(t.amount) > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (!emotionBuys.length || !Number.isFinite(latestPrice)) return empty();
