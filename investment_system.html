@@ -357,9 +357,9 @@
       <div class="card"><div class="label">相对沪深300</div><div class="medium" id="statExcessReturn">--</div><div class="small" id="statIndexReturn">同期沪深300：--</div></div>
     </div>
     <div class="grid cols-3" style="margin-top:14px">
-      <div class="card"><div class="label">情绪买入收益率</div><div class="medium" id="statEmotionReturn">--</div><div class="small" id="statEmotionDetail">--</div></div>
-      <div class="card"><div class="label">同期模拟定投收益率</div><div class="medium" id="statDcaReturn">--</div><div class="small" id="statDcaDetail">--</div></div>
-      <div class="card"><div class="label">情绪买入相对定投</div><div class="medium" id="statEmotionVsDca">--</div><div class="small">只统计沪深300ETF的情绪/回撤买入记录。</div></div>
+      <div class="card"><div class="label">主动买入收益率</div><div class="medium" id="statEmotionReturn">--</div><div class="small" id="statEmotionDetail">--</div></div>
+      <div class="card"><div class="label">同期定投收益率</div><div class="medium" id="statDcaReturn">--</div><div class="small" id="statDcaDetail">--</div></div>
+      <div class="card"><div class="label">主动买入相对定投</div><div class="medium" id="statEmotionVsDca">--</div><div class="small">只统计沪深300ETF主动买入；兼容旧的情绪/回撤买入记录。</div></div>
     </div>
     <div class="card" style="margin-top:14px">
       <div class="label">策略健康度</div>
@@ -422,34 +422,42 @@
     <div class="rules">
       <div class="rule blue">
         <b>沪深300ETF买入触发：</b><br>
-        条件A：情绪温度 ≤ 30%，情绪极度悲观，可独立触发评估。<br>
-        条件B：沪深300从过去6个月最高点回撤 ≥ 10%。<br>
-        A或B任意一条成立，就进入买入评估。
+        强信号A：情绪温度 ≤25%，可独立触发主动买入评估。<br>
+        强信号B：沪深300从过去6个月最高点回撤 ≥15%，可独立触发主动买入评估。<br>
+        弱信号：回撤 10%~15%，且情绪温度≤30%或PE≤13，才触发弱主动加仓。<br>
+        情绪温度 25%~30% 不单独买入，需叠加回撤≥10%或PE≤13。
       </div>
       <div class="rule amber">
         <b>买入金额：</b><br>
-        仅满足A或B：从中短债取出 2 万买入。<br>
-        同时满足A+B：买入 3 万。<br>
-        如果 PE ≤ 13：在以上基础上额外 +2 万，总仓位仍不能超过沪深300ETF上限。
+        弱主动加仓：从中短债取出 5000 元试探性买入。<br>
+        仅满足强信号A或强信号B：从中短债取出 1 万买入。<br>
+        同时满足强信号A+B：买入 2 万。<br>
+        PE ≤13 只在已有买入信号成立时额外 +1 万；单次常规上限3万，极端低温+深回撤+PE≤13可放宽至4万。
+      </div>
+      <div class="rule blue">
+        <b>主动买入后的再次买入：</b><br>
+        每次主动买入后至少观察4周，观察期内不重复主动买入，只保留每月定投。<br>
+        若同时满足温度≤20%、回撤≥15%、PE≤13，且较上次主动买入价格继续下跌≥5%，可缩短为2周后追加。<br>
+        单轮低温/回撤周期内主动买入最多4次；情绪温度回升至>30%后，本轮周期结束。
       </div>
       <div class="rule red">
         <b>被动减仓（趋势破坏信号）：</b><br>
         回撤基准优先使用最近一次主动买入点，不含每月定投。<br>
         如果一直没有主动买入、只有定投，则使用过去6个月最高点。<br>
-        从该基准继续回撤 ≥ 15%，且情绪中性或亢奋、不是悲观时，减当时剩余市值的 1/3，转入中短债。<br>
+        从该基准继续回撤 ≥ 15%，且情绪温度 >30%、PE >13 时，减当时剩余市值的 1/3，转入中短债；温度≤30%或PE≤13视为低温/低估区，不执行被动减仓。<br>
         被动减仓执行后，回撤基准重置为减仓当日价格，下次需要从新基准再跌 ≥ 15%。<br>
-        若过去12周内已发生过主动减仓，被动减仓幅度减半，即 1/6。若被动减仓与主动卖出同时满足，以主动卖出规则为准；若减仓信号与买入条件同时出现，减仓优先。
+        若过去12周内已发生过主动减仓，被动减仓幅度减半，即 1/6。若被动减仓与主动卖出同时满足，以主动卖出规则为准；若减仓信号与买入条件同时出现，低温/低估优先，温度≤25%或PE≤13时不执行被动减仓。
       </div>
       <div class="rule red">
         <b>主动卖出触发：</b><br>
-        必要条件：情绪温度 ≥ 80%。如果温度不到80%，不触发任何主动减仓。<br>
+        必要条件：情绪温度 ≥ 85%。80%~85%只是偏热观察区，不触发主动减仓。<br>
         增强确认：媒体叙事、社交热度这两条辅助指标至少满足1条。辅助指标由AI舆情评估保存结果参与判断。
       </div>
       <div class="rule red">
         <b>主动减仓幅度：</b><br>
-        温度 80~85%：减当前剩余市值 25%。<br>
-        温度 85~90%：减当前剩余市值 1/3。<br>
-        温度 >90%：减当前剩余市值 1/2。<br>
+        温度 85~90%：减当前剩余市值 20%~25%（系统按25%提示）。<br>
+        温度 90~95%：减当前剩余市值 1/3。<br>
+        温度 >95%：减当前剩余市值 1/2。<br>
         每次减仓基数是当时剩余市值，不是最初总市值。
       </div>
       <div class="rule red">
@@ -457,22 +465,22 @@
         第二次及以后，必须同时满足三条：<br>
         1. 距离上次减仓 ≥ 6周。<br>
         2. 当前情绪温度仍 ≥ 80%。<br>
-        3. 当前温度高于上次减仓时的温度，或温度持续 ≥80% 已超过4周。<br>
+        3. 当前温度高于上次减仓时的温度，或温度持续 ≥80% 已超过4周，或温度>95%/PE>18且辅助指标明显亢奋。<br>
         页面总览会显示减仓冷却期倒计时。
       </div>
       <div class="rule blue">
         <b>定投与主动加仓恢复：</b><br>
         每月7号定投2000元永不暂停，任何减仓都不影响定投。<br>
-        普通减仓后：冷静期 ≥4周后，恢复正常买入触发逻辑，条件A或B任一满足即可主动加仓。<br>
-        大幅减仓后：若为温度 >90% 触发的1/2减仓，需冷静期 ≥4周，且温度计回落至80%以下，才恢复正常买入触发逻辑。
+        普通减仓后：主动买入冷静期 ≥6周，之后恢复正常买入触发逻辑。<br>
+        极端高温减仓后：若为温度 >95% 触发的1/2减仓，主动买入冷静期 ≥8周，且温度计回落至80%以下，才恢复正常买入触发逻辑。
         沪深300ETF市值达到25万上限时，系统不再提示主动买入；接近上限时会自动压低建议金额。
       </div>
       <div class="rule red">
         <b>PE约束与安全阀：</b><br>
-        PE约束只适用于主动减仓，被动减仓不受PE影响。<br>
-        PE < 14：减仓幅度减半。<br>
-        PE < 12：默认不主动减仓。<br>
-        PE < 12 时的例外：温度 >95% 且社交热度满足，允许减仓 10% 作为安全阀。
+        PE约束只适用于主动减仓；被动减仓按温度>30%、PE>13判断。<br>
+        PE 13~14.5：减仓幅度减半。<br>
+        PE < 13：默认不主动减仓。<br>
+        PE < 13 时的例外：温度 >95% 且社交热度满足，允许减仓 10% 作为安全阀。
       </div>
       <div class="rule">
         <b>铁律：</b>每次操作都记录。长期统计依赖交易日志和资产快照，没有记录就很难验证策略。
@@ -598,22 +606,25 @@ function composite(mp, pp, pe) {
   if (mp == null && pp == null) return null;
   if (mp == null) return pp;
   if (pp == null) return mp;
-  let result = Math.round(mp * 0.7 + pp * 0.3);
+  let result = Math.round(mp * 0.85 + pp * 0.15);
   if (pe != null && pe < 12) result = Math.min(result, 60);
   if (pe != null && pe > 18) result = Math.max(result, 40);
   return result;
 }
 function colorForTemp(t) {
   if (t == null) return "#65736c";
-  if (t <= 30) return "#2563eb";
-  if (t >= 80) return "#b42318";
+  if (t <= 25) return "#2563eb";
+  if (t >= 85) return "#b42318";
+  if (t >= 80) return "#b7791f";
   if (t >= 60) return "#b7791f";
   return "#176b43";
 }
 function statusForTemp(t) {
   if (t == null) return ["暂无数据", "请先更新或录入数据。"];
-  if (t <= 30) return ["偏冷", "市场情绪偏悲观，按计划进入加仓评估。"];
-  if (t >= 80) return ["偏热", "市场情绪偏亢奋，按计划检查减仓辅助指标。"];
+  if (t <= 25) return ["低温", "情绪温度≤25%，可独立触发主动买入评估。"];
+  if (t <= 30) return ["弱买观察", "情绪温度25%~30%，不单独买入，需叠加回撤≥10%或PE≤13。"];
+  if (t >= 85) return ["减仓评估", "情绪温度≥85%，按计划检查减仓辅助指标。"];
+  if (t >= 80) return ["偏热观察", "情绪温度80%~85%，只进入观察区，暂不主动减仓。"];
   if (t >= 60) return ["偏高", "情绪偏热但未到减仓触发线，继续观察。"];
   return ["中性", "按计划定投和记录，暂不需要额外动作。"];
 }
@@ -662,12 +673,19 @@ function makeDecision(s) {
     return { cls: "cold", text: `出现沪深300ETF买入提醒：${(etf.buyReasons || []).join("；")}。建议金额按计划约 ${money(etf.suggestedBuyAmount)} 元，执行前再核对仓位上限和现金安排。` };
   }
   if (!s) return { cls: "", text: "还没有足够数据。先运行更新脚本，或者手动补录融资余额和 PE。" };
+  if (s.temp <= 25) {
+    const extra = s.pe != null && s.pe <= 13 ? "PE≤13，在买入信号成立基础上允许额外+1万。" : "PE未触发额外加仓条件。";
+    return { cls: "cold", text: `当前温度 ${s.temp}%，属于低温强信号，可独立进入主动买入评估；${extra}` };
+  }
   if (s.temp <= 30) {
-    const extra = s.pe != null && s.pe <= 13 ? "PE 也不高，计划里允许考虑额外加仓。" : "PE 未触发额外加仓条件。";
-    return { cls: "cold", text: `当前温度 ${s.temp}%，进入“偏冷/悲观”区。下一步不是立刻冲动买入，而是检查沪深300是否也满足 6 个月回撤10%条件；${extra}` };
+    const extra = s.pe != null && s.pe <= 13 ? "PE≤13，可作为弱买确认条件。" : "还需叠加沪深300回撤≥10%。";
+    return { cls: "cold", text: `当前温度 ${s.temp}%，处于弱买观察区，不单独买入；${extra}` };
+  }
+  if (s.temp >= 85) {
+    return { cls: "hot", text: `当前温度 ${s.temp}%，进入减仓评估区。下一步检查媒体叙事和社交热度，满足辅助指标后才按计划减仓。` };
   }
   if (s.temp >= 80) {
-    return { cls: "hot", text: `当前温度 ${s.temp}%，进入“偏热/亢奋”区。下一步检查媒体叙事和社交热度，满足辅助指标后才按计划减仓。` };
+    return { cls: "warn", text: `当前温度 ${s.temp}%，处于80%~85%偏热观察区，暂不主动减仓，但开始每周核查辅助指标。` };
   }
   if (s.temp >= 60) return { cls: "warn", text: `当前温度 ${s.temp}%，情绪偏高。继续定投和记录，暂时不把它当成减仓信号。` };
   return { cls: "", text: `当前温度 ${s.temp}%，处于中性区。按原计划定投，继续记录交易和资产快照。` };
@@ -741,7 +759,7 @@ function render() {
   const st = statusForTemp(s && s.temp);
   document.getElementById("tempStatus").textContent = st[0];
   document.getElementById("tempStatus").style.color = colorForTemp(s && s.temp);
-  document.getElementById("tempDetail").textContent = s ? `融资分位 ${s.mp}% × 70% + PE分位 ${s.pp ?? "--"}% × 30%。最新日期 ${s.date}。${st[1]}` : st[1];
+  document.getElementById("tempDetail").textContent = s ? `融资分位 ${s.mp}% × 85% + PE分位 ${s.pp ?? "--"}% × 15%。最新日期 ${s.date}。${st[1]}` : st[1];
   document.getElementById("tempFill").style.width = (s ? s.temp : 0) + "%";
   document.getElementById("tempFill").style.background = colorForTemp(s && s.temp);
 
@@ -992,7 +1010,9 @@ function sellCooldownStatus() {
   const currentDate = today();
   const elapsedDays = Math.max(0, daysBetween(lastSell.date, currentDate));
   const elapsedWeeks = elapsedDays / 7;
-  const earliestDate = shiftDate(lastSell.date, 42);
+  const isLargeSell = Number(lastSell.tempAtTrade) > 95 || String(lastSell.note || "").includes("大幅减仓") || String(lastSell.note || "").includes("极端高温");
+  const requiredDays = isLargeSell ? 56 : 42;
+  const earliestDate = shiftDate(lastSell.date, requiredDays);
   const remainingDays = Math.max(0, daysBetween(currentDate, earliestDate));
   const remainingWeeks = remainingDays / 7;
   return {
@@ -1001,6 +1021,8 @@ function sellCooldownStatus() {
     currentDate,
     elapsedDays,
     elapsedWeeks,
+    isLargeSell,
+    requiredWeeks: requiredDays / 7,
     earliestDate,
     remainingDays,
     remainingWeeks,
@@ -1008,9 +1030,9 @@ function sellCooldownStatus() {
   };
 }
 function baseSellRateByTemp(temp) {
-  if (!Number.isFinite(temp) || temp < 80) return 0;
-  if (temp < 85) return 0.25;
-  if (temp <= 90) return 1 / 3;
+  if (!Number.isFinite(temp) || temp < 85) return 0;
+  if (temp < 90) return 0.25;
+  if (temp <= 95) return 1 / 3;
   return 0.5;
 }
 function formatRate(rate) {
@@ -1037,7 +1059,7 @@ function activeEtf300SellPlan(base, temp, ai) {
   const reasons = [];
   const blockers = [];
 
-  if (!Number.isFinite(temp) || temp < 80) blockers.push("情绪温度未达到80%，不触发主动减仓");
+  if (!Number.isFinite(temp) || temp < 85) blockers.push("情绪温度未达到85%，不触发主动减仓；80%~85%只进入偏热观察区");
   if (!assistReasons.length) blockers.push(aiAssist ? "AI总评写了满足辅助指标，但指标1/指标2未分别标记为是，请补填后再触发主动减仓" : "最近7天AI舆情评估未满足辅助指标");
 
   if (lastSell) {
@@ -1046,7 +1068,8 @@ function activeEtf300SellPlan(base, temp, ai) {
     const hotterThanLast = Number.isFinite(lastTemp) && Number.isFinite(temp) && temp > lastTemp;
     const sustainedHot = hotForFourWeeks(currentDate);
     if (gap < 42) blockers.push(`距离上次减仓 ${gap} 天，未满6周`);
-    if (!hotterThanLast && !sustainedHot) blockers.push("再次减仓需要当前温度高于上次，或温度连续4周≥80%");
+    const extremeConfirmed = Number.isFinite(temp) && temp > 95 && ((Number.isFinite(currentPe) && currentPe > 18) || aiSocial || aiMedia);
+    if (!hotterThanLast && !sustainedHot && !extremeConfirmed) blockers.push("再次减仓需要当前温度高于上次、温度连续4周≥80%，或温度>95/PE>18且辅助指标明显亢奋");
     reasons.push(`上次减仓：${lastSell.date}，金额 ${money(lastSell.amount)}${Number.isFinite(lastTemp) ? "，当时温度 " + lastTemp + "%" : ""}`);
   } else {
     reasons.push("交易日志里还没有沪深300ETF卖出记录，本次按首次主动减仓判断");
@@ -1054,17 +1077,17 @@ function activeEtf300SellPlan(base, temp, ai) {
 
   let rate = baseSellRateByTemp(temp);
   let peNote = "";
-  if (Number.isFinite(currentPe) && currentPe < 12) {
+  if (Number.isFinite(currentPe) && currentPe < 13) {
     if (Number.isFinite(temp) && temp > 95 && aiSocial) {
       rate = 0.1;
-      peNote = "PE<12，但温度>95且社交热度满足，按安全阀只允许减10%";
+      peNote = "PE<13，但温度>95且社交热度满足，按安全阀只允许减10%";
     } else {
       rate = 0;
-      blockers.push("PE<12，默认不主动减仓");
+      blockers.push("PE<13，默认不主动减仓");
     }
-  } else if (Number.isFinite(currentPe) && currentPe < 14 && rate > 0) {
+  } else if (Number.isFinite(currentPe) && currentPe < 14.5 && rate > 0) {
     rate = rate / 2;
-    peNote = "PE<14，原减仓幅度减半";
+    peNote = "PE 13~14.5，原减仓幅度减半";
   }
 
   const snap = latestSnapshot();
@@ -1089,10 +1112,15 @@ function passiveEtf300SellPlan(temp) {
   const basis = passiveDrawdownBasis();
   const drawdown = basis.ready ? Number(basis.drawdown) : null;
   const currentDate = basis.ready ? basis.currentDate : today();
+  const current = currentSentiment();
+  const currentPe = current && current.pe != null ? Number(current.pe) : (AUTO.signals && AUTO.signals.sentiment ? Number(AUTO.signals.sentiment.pe) : null);
   const blockers = [];
   if (!basis.ready) blockers.push(basis.reason || "暂无被动减仓基准数据");
   if (!Number.isFinite(drawdown) || drawdown > -15) blockers.push("沪深300按新版基准计算的回撤未达到15%，不触发被动减仓");
-  if (!Number.isFinite(temp) || temp <= 30) blockers.push("情绪仍偏悲观，不触发被动减仓");
+  if (!Number.isFinite(temp) || temp <= 30) blockers.push("情绪温度≤30%，视为低温区，不触发被动减仓");
+  if (Number.isFinite(currentPe) && currentPe <= 13) blockers.push("PE≤13，视为低估区，不触发被动减仓");
+  if (!Number.isFinite(currentPe)) blockers.push("缺少当前PE，无法确认被动减仓所需的PE>13条件");
+  const pauseBuyOnLowConflict = basis.ready && Number.isFinite(drawdown) && drawdown <= -15 && ((Number.isFinite(temp) && temp <= 25) || (Number.isFinite(currentPe) && currentPe <= 13));
 
   const recentActiveSell = etf300SellTrades()
     .filter(t => isEtfActiveSellReason(t.reason) || String(t.note || "").includes("主动减仓"))
@@ -1106,16 +1134,17 @@ function passiveEtf300SellPlan(temp) {
     sellSignal: blockers.length === 0,
     rate,
     amount: Number.isFinite(etfValue) ? etfValue * rate : null,
+    pauseBuyOnLowConflict,
     sellReasons: blockers.length
       ? blockers
       : [
-          `被动减仓：${basis.basisText} 回撤 ${num(drawdown, 2)}%，且情绪非悲观`,
+          `被动减仓：${basis.basisText} 回撤 ${num(drawdown, 2)}%，且温度>30%、PE>13`,
           recentActiveSell ? `过去12周内已有主动减仓 ${recentActiveSell.date}，本次幅度减半` : "",
           `本次计划减仓比例：${formatRate(rate)}`
         ].filter(Boolean)
   };
 }
-function etf300BuyControl(base, temp, ai) {
+function etf300BuyControl(base, temp, ai, currentPe, hsDrawdown) {
   const currentDate = today();
   const rawBuySignal = Boolean(base.buySignal);
   const buyReasons = [...(base.buyReasons || [])];
@@ -1137,21 +1166,51 @@ function etf300BuyControl(base, temp, ai) {
     }
   }
 
+  const activeBuys = etf300ActiveBuyTrades();
+  const lastActiveBuy = activeBuys.length ? activeBuys[activeBuys.length - 1] : null;
+  if (lastActiveBuy && buySignal) {
+    const gap = daysBetween(lastActiveBuy.date, currentDate);
+    const currentPrice = Number((etf300PriceOnOrBefore(currentDate) || {}).close);
+    const lastBuyPrice = Number.isFinite(Number(lastActiveBuy.price)) && Number(lastActiveBuy.price) > 0
+      ? Number(lastActiveBuy.price)
+      : Number((etf300PriceOnOrAfter(lastActiveBuy.date) || {}).close);
+    const extremeEarlyAdd = Number.isFinite(temp) && temp <= 20 && Number.isFinite(hsDrawdown) && hsDrawdown <= -15 && Number.isFinite(currentPe) && currentPe <= 13;
+    const priceDownEnough = Number.isFinite(currentPrice) && Number.isFinite(lastBuyPrice) && lastBuyPrice > 0 && currentPrice <= lastBuyPrice * 0.95;
+    const requiredGap = extremeEarlyAdd && priceDownEnough ? 14 : 28;
+    if (gap < requiredGap) {
+      blockers.push(`距离上次主动买入 ${gap} 天，未满${requiredGap === 14 ? "2周极端追加" : "4周观察"}间隔`);
+    } else if (requiredGap === 14) {
+      buyReasons.push("极端低温+深回撤+PE≤13，且较上次主动买入价继续下跌≥5%，允许2周后提前追加");
+    } else {
+      buyReasons.push("距离上次主动买入已满4周，可重新按当前条件评估");
+    }
+  }
+
+  if (buySignal) {
+    const latestWarm = sentimentSeries()
+      .filter(r => r.date <= currentDate && Number(r.temp) > 30)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .pop();
+    const cycleBuys = activeBuys.filter(t => !latestWarm || t.date > latestWarm.date);
+    if (cycleBuys.length >= 4) blockers.push("本轮低温/回撤周期内主动买入已达到4次上限，等待情绪回升或新一轮信号");
+  }
+
   const sellTrades = etf300SellTrades();
   const lastSell = sellTrades.length ? sellTrades[sellTrades.length - 1] : null;
   if (lastSell && buySignal) {
     const gap = daysBetween(lastSell.date, currentDate);
-    const isLargeSell = Number(lastSell.tempAtTrade) > 90 || String(lastSell.note || "").includes("大幅减仓");
+    const isLargeSell = Number(lastSell.tempAtTrade) > 95 || String(lastSell.note || "").includes("大幅减仓") || String(lastSell.note || "").includes("极端高温");
     const largeRecovery = Number.isFinite(temp) && temp < 80;
+    const requiredGap = isLargeSell ? 56 : 42;
 
-    if (gap < 28) blockers.push(`距离上次减仓 ${gap} 天，未满4周，暂不恢复主动加仓`);
+    if (gap < requiredGap) blockers.push(`距离上次减仓 ${gap} 天，未满${isLargeSell ? "8周" : "6周"}，暂不恢复主动加仓`);
     if (isLargeSell && !largeRecovery) {
-      blockers.push("上次属于大幅减仓，需温度回落至80%以下，才恢复主动加仓");
+      blockers.push("上次属于极端高温减仓，需温度回落至80%以下，才恢复主动加仓");
     }
-    if (gap >= 28 && !isLargeSell) {
-      buyReasons.push(`普通减仓后已满4周，恢复正常买入触发逻辑`);
-    } else if (gap >= 28 && isLargeSell && largeRecovery) {
-      buyReasons.push(`大幅减仓后已满4周，且温度已回落至80%以下，恢复正常买入触发逻辑`);
+    if (gap >= requiredGap && !isLargeSell) {
+      buyReasons.push(`普通减仓后已满6周，恢复正常买入触发逻辑`);
+    } else if (gap >= requiredGap && isLargeSell && largeRecovery) {
+      buyReasons.push(`极端高温减仓后已满8周，且温度已回落至80%以下，恢复正常买入触发逻辑`);
     } else {
       buyReasons.push(`上次减仓：${lastSell.date}，主动加仓需通过恢复条件`);
     }
@@ -1177,22 +1236,30 @@ function effectiveEtf300Signal() {
   const currentPe = current && current.pe != null ? Number(current.pe) : (AUTO.signals && AUTO.signals.sentiment ? Number(AUTO.signals.sentiment.pe) : null);
   const hsDrawdownInfo = latestHs300DrawdownInfo();
   const hsDrawdown = hsDrawdownInfo ? Number(hsDrawdownInfo.drawdownPct) : null;
-  const buyA = Number.isFinite(temp) && temp <= 30;
-  const buyB = Number.isFinite(hsDrawdown) && hsDrawdown <= -10;
+  const strongTemp = Number.isFinite(temp) && temp <= 25;
+  const weakTemp = Number.isFinite(temp) && temp > 25 && temp <= 30;
+  const deepDrawdown = Number.isFinite(hsDrawdown) && hsDrawdown <= -15;
+  const weakDrawdown = Number.isFinite(hsDrawdown) && hsDrawdown <= -10 && hsDrawdown > -15;
   const peExtra = Number.isFinite(currentPe) && currentPe <= 13;
+  const weakBuy = weakDrawdown && (weakTemp || peExtra);
   let buyAmount = 0;
-  if (buyA && buyB) buyAmount = 30000;
-  else if (buyA || buyB) buyAmount = 20000;
-  if (buyAmount > 0 && peExtra) buyAmount += 20000;
+  if (strongTemp && deepDrawdown) buyAmount = 20000;
+  else if (strongTemp || deepDrawdown) buyAmount = 10000;
+  else if (weakBuy) buyAmount = 5000;
+  if (buyAmount > 0 && peExtra) buyAmount += 10000;
+  if (buyAmount > 30000 && !(strongTemp && deepDrawdown && peExtra)) buyAmount = 30000;
+  if (strongTemp && deepDrawdown && peExtra && buyAmount > 40000) buyAmount = 40000;
   base.buySignal = buyAmount > 0;
   base.suggestedBuyAmount = buyAmount;
   base.buyReasons = [
-    buyA ? "情绪温度 <= 30%" : "",
-    buyB ? "沪深300近6个月回撤 >= 10%" : "",
-    peExtra && buyAmount > 0 ? "PE <= 13，可考虑额外加仓" : ""
+    strongTemp ? "情绪温度 <= 25%，低温强信号" : "",
+    deepDrawdown ? "沪深300近6个月回撤 >= 15%，深回撤强信号" : "",
+    weakBuy ? "回撤10%~15%，且温度<=30%或PE<=13，触发弱主动加仓" : "",
+    weakTemp && !weakBuy ? "情绪温度25%~30%仅为弱买观察区，需叠加回撤>=10%或PE<=13" : "",
+    peExtra && buyAmount > 0 ? "PE <= 13，在买入信号成立基础上额外加仓1万" : ""
   ].filter(Boolean);
   const ai = aiAssessmentActive();
-  const buyPlan = etf300BuyControl(base, temp, ai);
+  const buyPlan = etf300BuyControl(base, temp, ai, currentPe, hsDrawdown);
   const sellPlan = activeEtf300SellPlan(base, temp, ai);
   const passivePlan = passiveEtf300SellPlan(temp);
   const finalPlan = sellPlan.sellSignal ? sellPlan : passivePlan.sellSignal ? passivePlan : sellPlan;
@@ -1200,9 +1267,17 @@ function effectiveEtf300Signal() {
   base.sellReasons = finalPlan.sellReasons;
   base.sellRate = finalPlan.rate;
   base.suggestedSellAmount = finalPlan.amount;
-  base.buySignal = finalPlan.sellSignal ? false : buyPlan.buySignal;
+  const pauseBuyOnLowConflict = !finalPlan.sellSignal && passivePlan.pauseBuyOnLowConflict && buyPlan.buySignal;
+  base.buySignal = finalPlan.sellSignal || pauseBuyOnLowConflict ? false : buyPlan.buySignal;
   base.suggestedBuyAmount = finalPlan.sellSignal ? 0 : buyPlan.suggestedBuyAmount;
-  base.buyReasons = finalPlan.sellSignal ? ["卖出/减仓信号优先，本次不提示买入"] : buyPlan.buyReasons;
+  if (finalPlan.sellSignal) {
+    base.buyReasons = ["卖出/减仓信号优先，本次不提示买入"];
+  } else if (pauseBuyOnLowConflict) {
+    base.suggestedBuyAmount = 0;
+    base.buyReasons = ["被动减仓条件与主动买入信号同时出现；按新版方案低温/低估优先，不减仓，也暂停新的主动买入，等待下一次4周评估", ...buyPlan.buyReasons];
+  } else {
+    base.buyReasons = buyPlan.buyReasons;
+  }
   base.buyPlan = buyPlan;
   base.sellPlan = sellPlan;
   base.passiveSellPlan = passivePlan;
@@ -1232,7 +1307,7 @@ function renderSellCooldown() {
   box.className = "decision " + (c.ready ? "warn" : "");
   const amount = money(Number(c.lastSell.amount));
   if (c.ready) {
-    box.textContent = `上次减仓：${formatDateZh(c.lastSell.date)}，金额 ${amount}。已过 ${c.elapsedWeeks.toFixed(1)} 周，已满6周冷却期；可以进入再次减仓评估，但仍要满足温度、AI辅助指标、PE约束等条件。`;
+    box.textContent = `上次减仓：${formatDateZh(c.lastSell.date)}，金额 ${amount}。已过 ${c.elapsedWeeks.toFixed(1)} 周，已满${c.requiredWeeks}周冷却期；可以进入再次减仓评估，但仍要满足温度、AI辅助指标、PE约束等条件。`;
   } else {
     box.textContent = `上次减仓：${formatDateZh(c.lastSell.date)}，金额 ${amount}。已过 ${c.elapsedWeeks.toFixed(1)} 周，还剩约 ${c.remainingWeeks.toFixed(1)} 周；最早 ${formatDateZh(c.earliestDate)} 才能再次评估减仓。`;
   }
@@ -1338,8 +1413,8 @@ function renderSignalCards(lastSnap) {
     etfCard.className = "card signal-card watch";
     document.getElementById("etf300SignalTitle").textContent = etf.sellPlan.sellCount > 0 ? "暂不满足再次减仓" : "暂不满足主动减仓";
     const buyStatus = etf.buyPlan && etf.buyPlan.rawBuySignal
-      ? (etf.buyPlan.buySignal ? "买入条件A/B也已触发，且恢复主动加仓规则已通过；当前优先显示减仓复核状态。" : "买入条件A/B已触发，但被恢复主动加仓规则或仓位上限拦截。")
-      : "买入条件A/B当前未触发。";
+      ? (etf.buyPlan.buySignal ? "主动买入信号也已触发，且恢复主动加仓规则已通过；当前优先显示减仓复核状态。" : "主动买入信号已触发，但被恢复主动加仓规则或仓位上限拦截。")
+      : "主动买入信号当前未触发。";
     document.getElementById("etf300SignalText").innerHTML = `510300 最新 ${num(etf.close, 3)}，当前PE ${num(etf.sellPlan.currentPe, 2)}。<br>${tags(etf.sellReasons)}<br>${tags([buyStatus])}`;
   } else if (etf.buyPlan && etf.buyPlan.rawBuySignal && !etf.buyPlan.buySignal) {
     etfCard.className = "card signal-card watch";
@@ -1348,7 +1423,7 @@ function renderSignalCards(lastSnap) {
   } else if (etf.buySignal) {
     etfCard.className = "card signal-card buy";
     document.getElementById("etf300SignalTitle").textContent = "出现买入提醒";
-    document.getElementById("etf300SignalText").innerHTML = `建议按计划评估约 ${money(etf.suggestedBuyAmount)} 元。510300 最新 ${num(etf.close, 3)}，沪深300近6个月回撤 ${num(hsDrawdownInfo ? hsDrawdownInfo.drawdownPct : NaN, 2)}%，条件B阈值为10%。<br>${tags(etf.buyReasons)}`;
+    document.getElementById("etf300SignalText").innerHTML = `建议按计划评估约 ${money(etf.suggestedBuyAmount)} 元。510300 最新 ${num(etf.close, 3)}，沪深300近6个月回撤 ${num(hsDrawdownInfo ? hsDrawdownInfo.drawdownPct : NaN, 2)}%。强回撤阈值15%，弱信号区间10%~15%。<br>${tags(etf.buyReasons)}`;
   } else {
     etfCard.className = "card signal-card ok";
     document.getElementById("etf300SignalTitle").textContent = "暂无买卖信号";
@@ -1467,8 +1542,8 @@ function renderPreTradeChecklist(lastSnap) {
   }
   const items = [];
   if (etf && etf.buySignal) {
-    items.push("沪深300ETF买入：确认A/B条件、PE额外加仓、现金/中短债是否足够。");
-    items.push("若此前发生过减仓：普通减仓需已满4周；大幅减仓需已满4周且温度回落至80%以下。");
+    items.push("沪深300ETF买入：确认低温强信号、深回撤强信号或弱主动加仓条件，PE额外加仓、现金/中短债是否足够。");
+    items.push("若此前发生过减仓：普通减仓需已满6周；极端高温减仓需已满8周且温度回落至80%以下。");
     items.push("买入后确认沪深300ETF市值不超过25万上限。");
   }
   if (etf && etf.sellSignal) {
@@ -1639,7 +1714,7 @@ function etf300SharesForTrade(t) {
 function renderEmotionVsDcaStats() {
   const empty = () => {
     document.getElementById("statEmotionReturn").textContent = "--";
-    document.getElementById("statEmotionDetail").textContent = "暂无情绪买入记录。";
+    document.getElementById("statEmotionDetail").textContent = "暂无沪深300ETF主动买入记录。";
     document.getElementById("statDcaReturn").textContent = "--";
     document.getElementById("statDcaDetail").textContent = "需要510300行情数据。";
     document.getElementById("statEmotionVsDca").textContent = "--";
@@ -1647,19 +1722,19 @@ function renderEmotionVsDcaStats() {
   const rows = etf300Rows();
   if (!rows.length) return empty();
   const latestPrice = Number(rows[rows.length - 1].close);
-  const emotionBuys = [...(state.trades || [])]
+  const activeBuys = [...(state.trades || [])]
     .filter(t => String(t.asset || "").includes("沪深300") && t.side === "买入")
     .filter(t => isEtfActiveBuyReason(t.reason))
     .filter(t => Number(t.amount) > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
-  if (!emotionBuys.length || !Number.isFinite(latestPrice)) return empty();
+  if (!activeBuys.length || !Number.isFinite(latestPrice)) return empty();
 
-  const cost = emotionBuys.reduce((sum, t) => sum + Number(t.amount), 0);
-  const shares = emotionBuys.reduce((sum, t) => sum + etf300SharesForTrade(t), 0);
-  const emotionValue = shares * latestPrice;
-  const emotionReturn = cost > 0 ? (emotionValue - cost) / cost * 100 : NaN;
+  const cost = activeBuys.reduce((sum, t) => sum + Number(t.amount), 0);
+  const shares = activeBuys.reduce((sum, t) => sum + etf300SharesForTrade(t), 0);
+  const activeValue = shares * latestPrice;
+  const activeReturn = cost > 0 ? (activeValue - cost) / cost * 100 : NaN;
 
-  const start = emotionBuys[0].date;
+  const start = activeBuys[0].date;
   const end = rows[rows.length - 1].date;
   const months = monthStartsBetween(start, end)
     .map(d => etf300PriceOnOrAfter(d))
@@ -1669,11 +1744,11 @@ function renderEmotionVsDcaStats() {
   const dcaValue = dcaShares * latestPrice;
   const dcaReturn = cost > 0 ? (dcaValue - cost) / cost * 100 : NaN;
 
-  document.getElementById("statEmotionReturn").textContent = pct(emotionReturn);
-  document.getElementById("statEmotionDetail").textContent = `投入 ${money(cost)}，当前约 ${money(emotionValue)}，共 ${emotionBuys.length} 笔。`;
+  document.getElementById("statEmotionReturn").textContent = pct(activeReturn);
+  document.getElementById("statEmotionDetail").textContent = `投入 ${money(cost)}，当前约 ${money(activeValue)}，共 ${activeBuys.length} 笔。`;
   document.getElementById("statDcaReturn").textContent = pct(dcaReturn);
   document.getElementById("statDcaDetail").textContent = `同样投入 ${money(cost)}，模拟每月 ${money(perMonth)}，共 ${months.length} 期。`;
-  document.getElementById("statEmotionVsDca").textContent = Number.isFinite(emotionReturn) && Number.isFinite(dcaReturn) ? pct(emotionReturn - dcaReturn) : "--";
+  document.getElementById("statEmotionVsDca").textContent = Number.isFinite(activeReturn) && Number.isFinite(dcaReturn) ? pct(activeReturn - dcaReturn) : "--";
 }
 function renderStrategyHealth() {
   const scoreBox = document.getElementById("strategyHealthScore");
