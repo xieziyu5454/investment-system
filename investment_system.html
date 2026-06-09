@@ -90,6 +90,23 @@
   .decision.warn { border-left-color: var(--amber); background: #fff8ea; }
   .decision.hot { border-left-color: var(--red); background: #fff1f0; }
   .decision.cold { border-left-color: var(--blue); background: #eef5ff; }
+  .weekly-card { border-left: 6px solid var(--line); background: #fbfcfd; }
+  .weekly-card.buy { border-left-color: var(--blue); background: #f4f9ff; }
+  .weekly-card.sell { border-left-color: var(--red); background: #fff6f5; }
+  .weekly-card.hold { border-left-color: var(--green); background: #f5fbf7; }
+  .weekly-card.watch { border-left-color: var(--amber); background: #fffaf0; }
+  .weekly-title { font-size: 26px; font-weight: 800; margin: 4px 0; letter-spacing: 0; }
+  .weekly-sub { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .traffic-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .traffic-item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: #fff; }
+  .traffic-state { font-weight: 800; margin: 4px 0; }
+  .traffic-item.go .traffic-state { color: var(--green); }
+  .traffic-item.watch .traffic-state { color: var(--amber); }
+  .traffic-item.stop .traffic-state { color: var(--red); }
+  .mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .mini-table th, .mini-table td { border-bottom: 1px solid var(--line); padding: 7px 6px; text-align: left; vertical-align: top; }
+  .reason-list { margin: 8px 0 0; padding-left: 18px; color: var(--ink); }
+  .reason-list li { margin: 4px 0; }
   .signal-card { border-left: 4px solid var(--line); }
   .signal-card.buy { border-left-color: var(--blue); background: #f7fbff; }
   .signal-card.sell { border-left-color: var(--red); background: #fff8f7; }
@@ -175,7 +192,7 @@
       -webkit-overflow-scrolling: touch;
     }
     .tab { flex: 0 0 auto; padding: 9px 11px; }
-    .grid.cols-4, .grid.cols-3, .grid.cols-2, .form-grid, .form-grid.two, .temp-block {
+    .grid.cols-4, .grid.cols-3, .grid.cols-2, .form-grid, .form-grid.two, .temp-block, .traffic-grid {
       grid-template-columns: 1fr;
     }
     .card, details.optional { padding: 14px; }
@@ -226,23 +243,38 @@
       <div class="card"><div class="label">最新沪深300 PE</div><div class="medium" id="dashPE">--</div><div class="small">中证指数 PETTM</div></div>
       <div class="card"><div class="label">总资产</div><div class="medium" id="dashAssets">--</div><div class="small" id="dashReturn">未记录净值</div></div>
     </div>
-    <div class="card" style="margin-top:14px">
-      <div class="label">下一步提示</div>
-      <div class="decision" id="decisionBox">等待数据。</div>
-      <div class="small" style="margin-top:10px">提示只负责提醒你“按计划检查什么”，不是替你做投资决定。</div>
+    <div class="card weekly-card" id="weeklyConclusionCard" style="margin-top:14px">
+      <div class="label">本周结论</div>
+      <div class="weekly-title" id="weeklyConclusionTitle">等待数据</div>
+      <div class="weekly-sub" id="weeklyConclusionReason">运行更新脚本或补录数据后显示。</div>
+    </div>
+    <div class="traffic-grid" id="trafficLightGrid">
+      <div class="traffic-item" id="buyLight"><div class="label">买入信号</div><div class="traffic-state">等待</div><div class="small">--</div></div>
+      <div class="traffic-item" id="sellLight"><div class="label">卖出信号</div><div class="traffic-state">等待</div><div class="small">--</div></div>
+      <div class="traffic-item" id="limitLight"><div class="label">限制条件</div><div class="traffic-state">等待</div><div class="small">--</div></div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px">
+      <div class="card">
+        <div class="label">如果今天执行，应执行多少</div>
+        <div id="executionAmountBox" class="small">等待信号计算。</div>
+      </div>
+      <div class="card">
+        <div class="label">为什么不操作</div>
+        <div id="noActionReasonsBox" class="small">若本周无需操作，会在这里逐条列出原因。</div>
+      </div>
     </div>
     <div class="card" style="margin-top:14px">
-      <div class="label">减仓冷却期</div>
-      <div class="decision" id="sellCooldownBox">还没有沪深300ETF减仓记录。</div>
+      <div class="label">下一次可能触发什么</div>
+      <div id="nextTriggerBox" class="small">等待数据。</div>
     </div>
     <div class="grid cols-2" style="margin-top:14px">
       <div class="card signal-card" id="etf300SignalCard">
-        <div class="label">沪深300ETF 提醒</div>
+        <div class="label">详细信号说明 · 沪深300ETF</div>
         <div class="medium" id="etf300SignalTitle">等待数据</div>
         <div class="small" id="etf300SignalText">--</div>
       </div>
       <div class="card signal-card" id="goldSignalCard">
-        <div class="label">黄金ETF 提醒</div>
+        <div class="label">详细信号说明 · 黄金ETF</div>
         <div class="medium" id="goldSignalTitle">等待数据</div>
         <div class="small" id="goldSignalText">--</div>
       </div>
@@ -732,7 +764,6 @@ function render() {
   const snapshots = [...state.snapshots].sort((a, b) => a.date.localeCompare(b.date));
   const lastSnap = latest(snapshots);
   const firstSnap = snapshots[0];
-  const decision = makeDecision(s);
 
   document.getElementById("dataStatus").textContent = AUTO.updatedAt ? `数据状态：自动数据更新于 ${AUTO.updatedAt}` : "数据状态：尚未生成自动数据";
   document.getElementById("dashTemp").textContent = s ? s.temp + "%" : "--";
@@ -742,11 +773,8 @@ function render() {
   document.getElementById("dashPE").textContent = lp ? num(lp.value, 2) : "--";
   document.getElementById("dashAssets").textContent = lastSnap ? money(lastSnap.total) : "--";
   document.getElementById("dashReturn").textContent = firstSnap && lastSnap && firstSnap !== lastSnap ? "累计 " + pct((lastSnap.total - firstSnap.total) / firstSnap.total * 100) : "未形成对比";
-  const box = document.getElementById("decisionBox");
-  box.className = "decision " + decision.cls;
-  box.textContent = decision.text;
-  renderSellCooldown();
   renderSignalCards(lastSnap);
+  renderWeeklyDashboard(lastSnap);
   recordSignalSnapshot();
   renderPreTradeChecklist(lastSnap);
   renderAllocationWarnings(lastSnap);
@@ -881,6 +909,10 @@ function etf300SellTrades() {
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+function etf300ActiveSellTrades() {
+  return etf300SellTrades()
+    .filter(t => isEtfActiveSellReason(t.reason) || String(t.note || "").includes("主动减仓"));
+}
 function isEtfActiveBuyReason(reason) {
   return ["主动买入", "情绪偏冷", "回撤触发"].includes(reason);
 }
@@ -1004,7 +1036,7 @@ function formatDateZh(date) {
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 function sellCooldownStatus() {
-  const rows = etf300SellTrades();
+  const rows = etf300ActiveSellTrades();
   if (!rows.length) return { hasSell: false };
   const lastSell = rows[rows.length - 1];
   const currentDate = today();
@@ -1054,7 +1086,7 @@ function activeEtf300SellPlan(base, temp, ai) {
     aiMedia ? "AI判断：指标1媒体叙事满足" : "",
     aiSocial ? "AI判断：指标2社交热度满足" : ""
   ].filter(Boolean);
-  const sellTrades = etf300SellTrades();
+  const sellTrades = etf300ActiveSellTrades();
   const lastSell = sellTrades.length ? sellTrades[sellTrades.length - 1] : null;
   const reasons = [];
   const blockers = [];
@@ -1075,7 +1107,8 @@ function activeEtf300SellPlan(base, temp, ai) {
     reasons.push("交易日志里还没有沪深300ETF卖出记录，本次按首次主动减仓判断");
   }
 
-  let rate = baseSellRateByTemp(temp);
+  const baseRate = baseSellRateByTemp(temp);
+  let rate = baseRate;
   let peNote = "";
   if (Number.isFinite(currentPe) && currentPe < 13) {
     if (Number.isFinite(temp) && temp > 95 && aiSocial) {
@@ -1099,6 +1132,7 @@ function activeEtf300SellPlan(base, temp, ai) {
   return {
     sellSignal,
     rate,
+    baseRate,
     amount,
     currentPe,
     lastSell,
@@ -1133,6 +1167,7 @@ function passiveEtf300SellPlan(temp) {
   return {
     sellSignal: blockers.length === 0,
     rate,
+    baseRate: rate,
     amount: Number.isFinite(etfValue) ? etfValue * rate : null,
     pauseBuyOnLowConflict,
     sellReasons: blockers.length
@@ -1154,6 +1189,7 @@ function etf300BuyControl(base, temp, ai, currentPe, hsDrawdown) {
 
   const snap = latestSnapshot();
   const etfValue = snap && Number.isFinite(Number(snap.etf300)) ? Number(snap.etf300) : null;
+  const bondAmmo = snap && Number.isFinite(Number(snap.bond)) ? Math.max(0, Number(snap.bond)) : null;
   if (Number.isFinite(etfValue)) {
     const remainingRoom = 250000 - etfValue;
     if (remainingRoom <= 0) {
@@ -1164,6 +1200,11 @@ function etf300BuyControl(base, temp, ai, currentPe, hsDrawdown) {
       amount = remainingRoom;
       buyReasons.push(`受25万仓位上限约束，本次最多约 ${money(amount)} 元`);
     }
+  }
+  if (buySignal && Number.isFinite(bondAmmo) && amount > bondAmmo) {
+    amount = bondAmmo;
+    buyReasons.push(`受中短债/现金可用弹药约束，本次最多约 ${money(amount)} 元`);
+    if (amount <= 0) blockers.push("中短债/现金可用弹药不足，不提示主动买入");
   }
 
   const activeBuys = etf300ActiveBuyTrades();
@@ -1247,6 +1288,7 @@ function effectiveEtf300Signal() {
   else if (strongTemp || deepDrawdown) buyAmount = 10000;
   else if (weakBuy) buyAmount = 5000;
   if (buyAmount > 0 && peExtra) buyAmount += 10000;
+  if (Number.isFinite(temp) && temp <= 20 && deepDrawdown && peExtra) buyAmount = 40000;
   if (buyAmount > 30000 && !(strongTemp && deepDrawdown && peExtra)) buyAmount = 30000;
   if (strongTemp && deepDrawdown && peExtra && buyAmount > 40000) buyAmount = 40000;
   base.buySignal = buyAmount > 0;
@@ -1254,6 +1296,7 @@ function effectiveEtf300Signal() {
   base.buyReasons = [
     strongTemp ? "情绪温度 <= 25%，低温强信号" : "",
     deepDrawdown ? "沪深300近6个月回撤 >= 15%，深回撤强信号" : "",
+    Number.isFinite(temp) && temp <= 20 && deepDrawdown && peExtra ? "极端低温+深回撤+PE<=13，单次上限放宽至4万" : "",
     weakBuy ? "回撤10%~15%，且温度<=30%或PE<=13，触发弱主动加仓" : "",
     weakTemp && !weakBuy ? "情绪温度25%~30%仅为弱买观察区，需叠加回撤>=10%或PE<=13" : "",
     peExtra && buyAmount > 0 ? "PE <= 13，在买入信号成立基础上额外加仓1万" : ""
@@ -1263,7 +1306,9 @@ function effectiveEtf300Signal() {
   const sellPlan = activeEtf300SellPlan(base, temp, ai);
   const passivePlan = passiveEtf300SellPlan(temp);
   const finalPlan = sellPlan.sellSignal ? sellPlan : passivePlan.sellSignal ? passivePlan : sellPlan;
+  const sellKind = sellPlan.sellSignal ? "主动减仓" : passivePlan.sellSignal ? "被动减仓" : "";
   base.sellSignal = finalPlan.sellSignal;
+  base.sellKind = sellKind;
   base.sellReasons = finalPlan.sellReasons;
   base.sellRate = finalPlan.rate;
   base.suggestedSellAmount = finalPlan.amount;
@@ -1458,6 +1503,147 @@ function renderSignalCards(lastSnap) {
       : `第一批记录日 ${gold.anchorDate}。518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : ""}`;
   }
 
+}
+function setTrafficLight(id, cls, state, detail) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.className = "traffic-item " + cls;
+  box.querySelector(".traffic-state").textContent = state;
+  box.querySelector(".small").textContent = detail || "--";
+}
+function uniqueReasons(items, limit = 6) {
+  return [...new Set((items || []).filter(Boolean))].slice(0, limit);
+}
+function renderReasonList(items, limit = 6) {
+  const rows = uniqueReasons(items, limit);
+  return rows.length ? `<ul class="reason-list">${rows.map(x => `<li>${escapeHtml(x)}</li>`).join("")}</ul>` : '<div class="small">暂无明确原因。</div>';
+}
+function renderExecutionAmountBox(etf, gold, lastSnap) {
+  const box = document.getElementById("executionAmountBox");
+  if (!box) return;
+  const etfValue = lastSnap && Number.isFinite(Number(lastSnap.etf300)) ? Number(lastSnap.etf300) : NaN;
+  if (etf && etf.sellSignal) {
+    const plan = etf.sellKind === "被动减仓" ? etf.passiveSellPlan : etf.sellPlan;
+    const rows = [
+      ["当前沪深300ETF市值", Number.isFinite(etfValue) ? money(etfValue) : "未记录"],
+      ["减仓类型", etf.sellKind || "卖出"],
+      ["基础减仓比例", formatRate(plan && plan.baseRate)],
+      ["PE约束后最终比例", formatRate(etf.sellRate)],
+      ["建议减仓金额", Number.isFinite(etf.suggestedSellAmount) ? money(etf.suggestedSellAmount) : "--"]
+    ];
+    box.innerHTML = `<table class="mini-table"><tbody>${rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</tbody></table>`;
+    return;
+  }
+  if (etf && etf.buySignal) {
+    const rows = [
+      ["当前沪深300ETF市值", Number.isFinite(etfValue) ? money(etfValue) : "未记录"],
+      ["建议买入金额", Number.isFinite(etf.suggestedBuyAmount) ? money(etf.suggestedBuyAmount) : "--"],
+      ["金额来源", "仅限中短债/现金可用弹药，不动应急金，不卖黄金，不借钱融资"],
+      ["仓位上限", "沪深300ETF总市值不超过25万"]
+    ];
+    box.innerHTML = `<table class="mini-table"><tbody>${rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join("")}</tbody></table>`;
+    return;
+  }
+  if (gold && gold.sellSignal) {
+    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现减仓/再平衡提醒</td></tr><tr><th>当前黄金仓位</th><td>${Number.isFinite(gold.goldAllocation) ? num(gold.goldAllocation, 2) + "%" : "--"}</td></tr><tr><th>建议</th><td>按计划适当减仓，不做短线交易</td></tr></tbody></table>`;
+    return;
+  }
+  if (gold && gold.buySignal) {
+    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现加仓/补仓提醒</td></tr><tr><th>建议金额</th><td>${Number.isFinite(gold.amount) ? money(gold.amount) : "--"}</td></tr><tr><th>依据</th><td>${escapeHtml((gold.reasons || []).join("；"))}</td></tr></tbody></table>`;
+    return;
+  }
+  box.textContent = "今天没有可执行金额。若信号满足，这里会直接显示比例和金额。";
+}
+function renderNoActionReasons(etf, gold, current) {
+  const box = document.getElementById("noActionReasonsBox");
+  if (!box) return;
+  if ((etf && (etf.buySignal || etf.sellSignal)) || (gold && (gold.buySignal || gold.sellSignal))) {
+    box.textContent = "本周已有可执行信号，请优先看“本周结论”和执行金额。";
+    return;
+  }
+  const reasons = [];
+  if (current) {
+    reasons.push(`当前温度：${current.temp}%，${statusForTemp(current.temp)[1]}`);
+    if (current.pe != null) {
+      const pe = Number(current.pe);
+      reasons.push(`当前PE：${num(pe, 2)}，${pe < 13 ? "低于13，默认不主动减仓" : pe < 14.5 ? "处于13~14.5，若减仓则幅度减半" : "不触发低PE禁止"}`);
+    }
+  } else {
+    reasons.push("缺少当前温度/PE数据。");
+  }
+  if (etf) {
+    reasons.push(...uniqueReasons((etf.sellPlan && etf.sellPlan.sellReasons) || [], 4));
+    if (etf.buyPlan && etf.buyPlan.rawBuySignal && !etf.buyPlan.buySignal) reasons.push(...uniqueReasons(etf.buyReasons, 3));
+    if (!(etf.buyPlan && etf.buyPlan.rawBuySignal)) reasons.push("主动买入信号未满足或未进入可执行状态。");
+  } else {
+    reasons.push("缺少沪深300自动信号数据。");
+  }
+  if (gold && !gold.buySignal && !gold.sellSignal) reasons.push("黄金ETF未触发加仓或减仓条件。");
+  box.innerHTML = renderReasonList(reasons, 7);
+}
+function renderNextTriggerBox(etf, gold, current) {
+  const box = document.getElementById("nextTriggerBox");
+  if (!box) return;
+  const items = [];
+  const c = sellCooldownStatus();
+  if (c.hasSell && !c.ready) items.push(`${formatDateZh(c.earliestDate)}后，若温度仍≥85%且辅助指标满足，重新评估主动减仓。`);
+  if (current) {
+    if (Number(current.temp) >= 80) items.push("若温度回落至80%以下，取消再次减仓观察，回到正常等待区。");
+    if (Number(current.pe) >= 13) items.push("若PE跌破13，默认不主动减仓；若PE处于13~14.5，减仓幅度减半。");
+    if (Number(current.temp) <= 30) items.push("若回撤达到10%~15%且PE≤13或温度≤30%，继续关注弱主动加仓。");
+  }
+  if (etf && etf.buyPlan && etf.buyPlan.rawBuySignal && !etf.buyPlan.buySignal) items.push("主动买入信号已出现但被纪律条件拦截，下一次按拦截原因复核。");
+  if (gold && !gold.buySignal && !gold.sellSignal) items.push("黄金继续按三批买入/再平衡规则观察，低于8%补仓，高于20%减仓。");
+  if (!items.length) items.push("继续每周更新数据并记录资产快照，等待下一次买入或减仓条件出现。");
+  box.innerHTML = renderReasonList(items, 5);
+}
+function renderWeeklyDashboard(lastSnap) {
+  const etf = effectiveEtf300Signal();
+  const gold = goldPlanSignal(lastSnap);
+  const current = currentSentiment();
+  const card = document.getElementById("weeklyConclusionCard");
+  const title = document.getElementById("weeklyConclusionTitle");
+  const reason = document.getElementById("weeklyConclusionReason");
+  if (!card || !title || !reason) return;
+
+  let cls = "hold";
+  let heading = "本周操作：暂不操作";
+  let reasons = [];
+  if (etf && etf.sellSignal) {
+    cls = "sell";
+    heading = `本周沪深300操作：${etf.sellKind || "减仓"} ${formatRate(etf.sellRate)}`;
+    if (Number.isFinite(etf.suggestedSellAmount)) heading += `，约 ${money(etf.suggestedSellAmount)}`;
+    reasons = etf.sellReasons;
+  } else if (etf && etf.buySignal) {
+    cls = "buy";
+    heading = `本周沪深300操作：主动买入约 ${money(etf.suggestedBuyAmount)}`;
+    reasons = etf.buyReasons;
+  } else if (gold && gold.sellSignal) {
+    cls = "sell";
+    heading = "本周黄金操作：检查黄金减仓";
+    reasons = gold.reasons || [gold.text];
+  } else if (gold && gold.buySignal) {
+    cls = "buy";
+    heading = `本周黄金操作：黄金加仓约 ${money(gold.amount)}`;
+    reasons = gold.reasons || [gold.text];
+  } else {
+    reasons = etf ? uniqueReasons([...(etf.sellPlan ? etf.sellPlan.sellReasons || [] : []), ...(etf.buyReasons || [])], 3) : ["等待沪深300自动信号数据。"];
+    if (current && Number(current.temp) >= 80) cls = "watch";
+  }
+  card.className = "card weekly-card " + cls;
+  title.textContent = heading;
+  reason.innerHTML = renderReasonList(reasons, 3);
+
+  const buyRaw = etf && etf.buyPlan && etf.buyPlan.rawBuySignal;
+  setTrafficLight("buyLight", etf && etf.buySignal ? "go" : buyRaw ? "watch" : "stop", etf && etf.buySignal ? "可执行" : buyRaw ? "进入评估" : "不满足", etf && etf.buySignal ? `建议 ${money(etf.suggestedBuyAmount)}` : buyRaw ? "有买入信号，但被纪律条件拦截" : "未满足主动买入条件");
+  const sellWatch = etf && etf.sellPlan && (etf.sellPlan.sellCount > 0 || (current && Number(current.temp) >= 80));
+  setTrafficLight("sellLight", etf && etf.sellSignal ? "go" : sellWatch ? "watch" : "stop", etf && etf.sellSignal ? "可执行" : sellWatch ? "进入评估" : "不满足", etf && etf.sellSignal ? `${formatRate(etf.sellRate)}${Number.isFinite(etf.suggestedSellAmount) ? "，约 " + money(etf.suggestedSellAmount) : ""}` : sellWatch ? "需满足冷却期、辅助指标和PE约束" : "未进入减仓评估区");
+  const limitReasons = etf ? uniqueReasons([...(etf.sellPlan && !etf.sellPlan.sellSignal ? etf.sellPlan.sellReasons || [] : []), ...(buyRaw && !(etf && etf.buySignal) ? etf.buyReasons || [] : [])], 2) : [];
+  setTrafficLight("limitLight", limitReasons.length ? "stop" : "go", limitReasons.length ? "有限制" : "无明显限制", limitReasons.join("；") || "当前没有拦截条件");
+
+  renderExecutionAmountBox(etf, gold, lastSnap);
+  renderNoActionReasons(etf, gold, current);
+  renderNextTriggerBox(etf, gold, current);
 }
 function currentSignalSnapshot() {
   const s = currentSentiment();
