@@ -267,6 +267,20 @@
       <div class="label">下一次可能触发什么</div>
       <div id="nextTriggerBox" class="small">等待数据。</div>
     </div>
+    <div class="card" style="margin-top:14px">
+      <div class="label">本周建议是否已处理</div>
+      <div class="actions" style="margin-top:8px">
+        <button class="secondary" onclick="markWeeklySignal('no-action')">记录本周无操作</button>
+        <button class="secondary" onclick="markWeeklySignal('buy-done')">我已执行买入</button>
+        <button class="secondary" onclick="markWeeklySignal('sell-done')">我已执行减仓</button>
+        <button class="secondary" onclick="markWeeklySignal('skip')">跳过本次信号</button>
+      </div>
+      <div id="weeklyActionStatus" class="small" style="margin-top:8px">尚未记录本周处理状态。</div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div class="label">当前规则判定</div>
+      <div id="ruleExplanationBox" class="small">等待数据。</div>
+    </div>
     <div class="grid cols-2" style="margin-top:14px">
       <div class="card signal-card" id="etf300SignalCard">
         <div class="label">详细信号说明 · 沪深300ETF</div>
@@ -470,7 +484,7 @@
         <b>主动买入后的再次买入：</b><br>
         每次主动买入后至少观察4周，观察期内不重复主动买入，只保留每月定投。<br>
         若同时满足温度≤20%、回撤≥15%、PE≤13，且较上次主动买入价格继续下跌≥5%，可缩短为2周后追加。<br>
-        单轮低温/回撤周期内主动买入最多4次；情绪温度回升至>30%后，本轮周期结束。
+        单轮低温/回撤周期内主动买入最多4次；情绪温度回升至>30%后，本轮周期结束。若温度>30%但沪深300较过去6个月最高点回撤仍≥15%，不再视为原低温周期延续，而是按“回撤独立触发”的新买入信号重新评估，并重新计算4周观察期与买入次数。
       </div>
       <div class="rule red">
         <b>被动减仓（趋势破坏信号）：</b><br>
@@ -1220,6 +1234,9 @@ function etf300BuyControl(base, temp, ai, currentPe, hsDrawdown) {
     const requiredGap = extremeEarlyAdd && priceDownEnough ? 14 : 28;
     if (gap < requiredGap) {
       blockers.push(`距离上次主动买入 ${gap} 天，未满${requiredGap === 14 ? "2周极端追加" : "4周观察"}间隔`);
+      if (extremeEarlyAdd && !priceDownEnough) {
+        blockers.push("虽满足温度≤20%、回撤≥15%、PE≤13，但沪深300尚未较上次主动买入价继续下跌≥5%，不能走2周提前追加通道");
+      }
     } else if (requiredGap === 14) {
       buyReasons.push("极端低温+深回撤+PE≤13，且较上次主动买入价继续下跌≥5%，允许2周后提前追加");
     } else {
@@ -1597,6 +1614,75 @@ function renderNextTriggerBox(etf, gold, current) {
   if (!items.length) items.push("继续每周更新数据并记录资产快照，等待下一次买入或减仓条件出现。");
   box.innerHTML = renderReasonList(items, 5);
 }
+function currentWeeklySignalRecord() {
+  return (state.signalHistory || []).find(r => r.date === today()) || null;
+}
+function weeklyActionText(action) {
+  return {
+    "no-action": "已记录本周无操作",
+    "buy-done": "已记录已执行买入",
+    "sell-done": "已记录已执行减仓",
+    "skip": "已记录跳过本次信号"
+  }[action] || "";
+}
+function markWeeklySignal(action) {
+  const snap = currentSignalSnapshot();
+  const old = currentWeeklySignalRecord() || {};
+  const row = {
+    ...old,
+    ...snap,
+    weeklyAction: action,
+    weeklyActionAt: new Date().toISOString(),
+    noActionDone: action === "no-action" || Boolean(old.noActionDone),
+    signalSkipped: action === "skip" || Boolean(old.signalSkipped),
+    etfBuyDone: (action === "buy-done" && snap.etfBuy) || Boolean(old.etfBuyDone || snap.etfBuyDone),
+    etfSellDone: (action === "sell-done" && snap.etfSell) || Boolean(old.etfSellDone || snap.etfSellDone),
+    goldBuyDone: (action === "buy-done" && snap.goldBuy) || Boolean(old.goldBuyDone || snap.goldBuyDone),
+    goldSellDone: (action === "sell-done" && snap.goldSell) || Boolean(old.goldSellDone || snap.goldSellDone),
+    reasons: [...new Set([...(old.reasons || []), ...(snap.reasons || []), weeklyActionText(action)])].filter(Boolean).slice(0, 12)
+  };
+  state.signalHistory = (state.signalHistory || []).filter(r => r.date !== row.date);
+  state.signalHistory.push(row);
+  state.signalHistory = state.signalHistory.sort((a, b) => a.date.localeCompare(b.date)).slice(-120);
+  saveState();
+  render();
+}
+function renderWeeklyActionStatus() {
+  const box = document.getElementById("weeklyActionStatus");
+  if (!box) return;
+  const row = currentWeeklySignalRecord();
+  if (!row || !row.weeklyAction) {
+    box.textContent = "尚未记录本周处理状态。";
+    return;
+  }
+  box.textContent = `${weeklyActionText(row.weeklyAction)}，记录时间 ${new Date(row.weeklyActionAt || Date.now()).toLocaleString()}。`;
+}
+function ruleRow(name, ok, currentValue, target, note) {
+  return { name, ok, currentValue, target, note };
+}
+function yesNo(ok) {
+  return ok ? "满足" : "不满足";
+}
+function renderRuleExplanation(etf, current) {
+  const box = document.getElementById("ruleExplanationBox");
+  if (!box) return;
+  const hs = latestHs300DrawdownInfo();
+  const temp = current ? Number(current.temp) : NaN;
+  const pe = current && current.pe != null ? Number(current.pe) : NaN;
+  const drawdown = hs ? Number(hs.drawdownPct) : NaN;
+  const ai = aiAssessmentActive();
+  const rows = [
+    ruleRow("买入：低温强信号", Number.isFinite(temp) && temp <= 25, Number.isFinite(temp) ? temp + "%" : "--", "≤25%", "可独立触发主动买入评估"),
+    ruleRow("买入：深回撤强信号", Number.isFinite(drawdown) && drawdown <= -15, pct(drawdown), "≤-15%", "可独立触发主动买入评估"),
+    ruleRow("买入：弱回撤区间", Number.isFinite(drawdown) && drawdown <= -10 && drawdown > -15, pct(drawdown), "-10%~-15%", "需叠加温度≤30%或PE≤13"),
+    ruleRow("买入：PE确认/额外加仓", Number.isFinite(pe) && pe <= 13, Number.isFinite(pe) ? num(pe, 2) : "--", "≤13", "已有买入信号时额外+1万；弱信号区间可作确认"),
+    ruleRow("主动减仓：温度门槛", Number.isFinite(temp) && temp >= 85, Number.isFinite(temp) ? temp + "%" : "--", "≥85%", "80%~85%只观察"),
+    ruleRow("主动减仓：辅助指标", Boolean(ai && (ai.mediaNarrative === "是" || ai.socialHeat === "是")), ai ? `媒体${ai.mediaNarrative || "--"} / 社交${ai.socialHeat || "--"}` : "暂无7天内AI评估", "指标1/2至少一项为是", "总评为是但指标1/2未勾选，不触发"),
+    ruleRow("主动减仓：PE禁止", !(Number.isFinite(pe) && pe < 13), Number.isFinite(pe) ? num(pe, 2) : "--", "≥13", "PE<13默认不主动减仓，安全阀例外"),
+    ruleRow("被动减仓：基准回撤", Number.isFinite(etf && etf.passiveSellPlan && etf.passiveSellPlan.rate) && etf && etf.passiveSellPlan && etf.passiveSellPlan.sellSignal, etf && etf.passiveSellPlan ? (etf.passiveSellPlan.sellReasons || []).join("；") : "--", "回撤≥15%且温度>30、PE>13", "满足时按1/3或1/6减仓")
+  ];
+  box.innerHTML = `<table class="mini-table"><thead><tr><th>规则</th><th>状态</th><th>当前值</th><th>目标</th><th>说明</th></tr></thead><tbody>${rows.map(r => `<tr><td>${escapeHtml(r.name)}</td><td>${yesNo(r.ok)}</td><td>${escapeHtml(r.currentValue)}</td><td>${escapeHtml(r.target)}</td><td>${escapeHtml(r.note)}</td></tr>`).join("")}</tbody></table>`;
+}
 function renderWeeklyDashboard(lastSnap) {
   const etf = effectiveEtf300Signal();
   const gold = goldPlanSignal(lastSnap);
@@ -1630,9 +1716,15 @@ function renderWeeklyDashboard(lastSnap) {
     reasons = etf ? uniqueReasons([...(etf.sellPlan ? etf.sellPlan.sellReasons || [] : []), ...(etf.buyReasons || [])], 3) : ["等待沪深300自动信号数据。"];
     if (current && Number(current.temp) >= 80) cls = "watch";
   }
+  const weeklyRecord = currentWeeklySignalRecord();
+  const handledText = weeklyRecord && weeklyRecord.weeklyAction ? weeklyActionText(weeklyRecord.weeklyAction) : "";
+  if (handledText) {
+    cls = weeklyRecord.weeklyAction === "skip" ? "watch" : "hold";
+    heading = "本周已处理：" + handledText.replace(/^已记录/, "");
+  }
   card.className = "card weekly-card " + cls;
   title.textContent = heading;
-  reason.innerHTML = renderReasonList(reasons, 3);
+  reason.innerHTML = (handledText ? `<div class="tag">${handledText}</div>` : "") + renderReasonList(reasons, 3);
 
   const buyRaw = etf && etf.buyPlan && etf.buyPlan.rawBuySignal;
   setTrafficLight("buyLight", etf && etf.buySignal ? "go" : buyRaw ? "watch" : "stop", etf && etf.buySignal ? "可执行" : buyRaw ? "进入评估" : "不满足", etf && etf.buySignal ? `建议 ${money(etf.suggestedBuyAmount)}` : buyRaw ? "有买入信号，但被纪律条件拦截" : "未满足主动买入条件");
@@ -1644,6 +1736,8 @@ function renderWeeklyDashboard(lastSnap) {
   renderExecutionAmountBox(etf, gold, lastSnap);
   renderNoActionReasons(etf, gold, current);
   renderNextTriggerBox(etf, gold, current);
+  renderWeeklyActionStatus();
+  renderRuleExplanation(etf, current);
 }
 function currentSignalSnapshot() {
   const s = currentSentiment();
@@ -1709,6 +1803,10 @@ function recordSignalSnapshot() {
       etfSellDone: Boolean(old.etfSellDone || snap.etfSellDone),
       goldBuyDone: Boolean(old.goldBuyDone || snap.goldBuyDone),
       goldSellDone: Boolean(old.goldSellDone || snap.goldSellDone),
+      weeklyAction: old.weeklyAction || snap.weeklyAction || "",
+      weeklyActionAt: old.weeklyActionAt || snap.weeklyActionAt || "",
+      noActionDone: Boolean(old.noActionDone || snap.noActionDone),
+      signalSkipped: Boolean(old.signalSkipped || snap.signalSkipped),
       reasons: [...new Set([...(old.reasons || []), ...(snap.reasons || [])])].slice(0, 10)
     };
   }
@@ -1766,7 +1864,7 @@ function renderSignalHistory() {
   const target = document.getElementById("signalHistoryTable");
   if (!target) return;
   const rows = [...(state.signalHistory || [])].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30);
-  target.innerHTML = table(["日期", "温度", "沪深300近6月回撤", "300买信号", "300买执行", "300卖信号", "300卖执行", "黄金买信号", "黄金卖信号", "主要原因"], rows.map(r => [
+  target.innerHTML = table(["日期", "温度", "沪深300近6月回撤", "300买信号", "300买执行", "300卖信号", "300卖执行", "黄金买信号", "黄金卖信号", "本周处理", "主要原因"], rows.map(r => [
     r.date,
     r.temp == null ? "--" : r.temp + "%",
     `${pct(r.hs300Drawdown)}${r.hs300DrawdownDate ? "（" + r.hs300DrawdownDate + "）" : ""}`,
@@ -1776,6 +1874,7 @@ function renderSignalHistory() {
     (r.etfSellDone || tradeDoneOnDate(r.date, "沪深300", "sell")) ? "是" : "否",
     (r.goldBuy || signalTradeOnDate(r.date, "黄金", "buy")) ? "是" : "否",
     (r.goldSell || signalTradeOnDate(r.date, "黄金", "sell")) ? "是" : "否",
+    weeklyActionText(r.weeklyAction) || "--",
     escapeHtml((r.reasons || []).join("；")).slice(0, 180)
   ]));
 }
@@ -2095,6 +2194,10 @@ function saveAiAssessment() {
     sampleCount: Number(document.getElementById("aiSampleCount").value || 0),
     reason: document.getElementById("aiReason").value.trim()
   };
+  if (row.sellAssist === "是" && row.mediaNarrative !== "是" && row.socialHeat !== "是") {
+    const ok = confirm("辅助指标为是，但指标1媒体叙事和指标2社交热度均为否。请至少选择一个为是，否则系统不会触发主动减仓。仍要保存吗？");
+    if (!ok) return;
+  }
   state.aiAssessments = state.aiAssessments || [];
   state.aiAssessments.push(row);
   saveState();
