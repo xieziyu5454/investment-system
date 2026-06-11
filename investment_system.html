@@ -255,6 +255,16 @@
     </div>
     <div class="grid cols-2" style="margin-top:14px">
       <div class="card">
+        <div class="label">减仓冷静期</div>
+        <div id="sellCooldownSummary" class="small">还没有沪深300ETF主动减仓记录。</div>
+      </div>
+      <div class="card">
+        <div class="label">主动买入周期</div>
+        <div id="buyCycleSummary" class="small">还没有沪深300ETF主动买入记录。</div>
+      </div>
+    </div>
+    <div class="grid cols-2" style="margin-top:14px">
+      <div class="card">
         <div class="label">如果今天执行，应执行多少</div>
         <div id="executionAmountBox" class="small">等待信号计算。</div>
       </div>
@@ -532,7 +542,7 @@
         <b>铁律：</b>每次操作都记录。长期统计依赖交易日志和资产快照，没有记录就很难验证策略。
       </div>
       <div class="rule amber">
-        <b>黄金ETF：</b>三批买入未完成前，系统按第三批规则提醒：第一批买入后高点回撤 ≥ 10%，或第一批买入满约3个月仍未触发，则提示第三批。三批买入完成后，黄金进入长期持有与再平衡阶段：目标区间10%-15%，低于8%才考虑补仓，高于20%才考虑适当减仓，不因短期涨跌频繁操作。
+        <b>黄金ETF：</b>三批买入未完成前，系统按第三批规则提醒：第一批买入后高点回撤 ≥ 10%，或第一批买入满约3个月仍未触发，则提示第三批。三批买入完成后，黄金进入长期持有与再平衡阶段：目标区间10%-15%，低于8%提醒补仓至约10%，高于20%提醒减仓至约15%，不因短期涨跌频繁操作。
       </div>
     </div>
     <div class="card source-list" style="margin-top:14px">
@@ -1224,20 +1234,14 @@ function etf300BuyControl(base, temp, ai, currentPe, hsDrawdown) {
   const activeBuys = etf300ActiveBuyTrades();
   const lastActiveBuy = activeBuys.length ? activeBuys[activeBuys.length - 1] : null;
   if (lastActiveBuy && buySignal) {
+    const cycle = buyCycleStatus(temp, currentPe, hsDrawdown);
     const gap = daysBetween(lastActiveBuy.date, currentDate);
-    const currentPrice = Number((etf300PriceOnOrBefore(currentDate) || {}).close);
-    const lastBuyPrice = Number.isFinite(Number(lastActiveBuy.price)) && Number(lastActiveBuy.price) > 0
-      ? Number(lastActiveBuy.price)
-      : Number((etf300PriceOnOrAfter(lastActiveBuy.date) || {}).close);
-    const extremeEarlyAdd = Number.isFinite(temp) && temp <= 20 && Number.isFinite(hsDrawdown) && hsDrawdown <= -15 && Number.isFinite(currentPe) && currentPe <= 13;
-    const priceDownEnough = Number.isFinite(currentPrice) && Number.isFinite(lastBuyPrice) && lastBuyPrice > 0 && currentPrice <= lastBuyPrice * 0.95;
-    const requiredGap = extremeEarlyAdd && priceDownEnough ? 14 : 28;
-    if (gap < requiredGap) {
-      blockers.push(`距离上次主动买入 ${gap} 天，未满${requiredGap === 14 ? "2周极端追加" : "4周观察"}间隔`);
-      if (extremeEarlyAdd && !priceDownEnough) {
+    if (cycle.remainingDays > 0) {
+      blockers.push(`距离上次主动买入 ${gap} 天，未满${cycle.requiredDays === 14 ? "2周极端追加" : "4周观察"}间隔`);
+      if (cycle.extremeEarlyAdd && !cycle.priceDownEnough) {
         blockers.push("虽满足温度≤20%、回撤≥15%、PE≤13，但沪深300尚未较上次主动买入价继续下跌≥5%，不能走2周提前追加通道");
       }
-    } else if (requiredGap === 14) {
+    } else if (cycle.requiredDays === 14) {
       buyReasons.push("极端低温+深回撤+PE≤13，且较上次主动买入价继续下跌≥5%，允许2周后提前追加");
     } else {
       buyReasons.push("距离上次主动买入已满4周，可重新按当前条件评估");
@@ -1391,12 +1395,20 @@ function goldPlanSignal(lastSnap) {
   const isFullPosition = goldBuys.length >= 3 || goldBuyAmount >= 90000 || goldMarketValue >= 85000 || goldAllocation >= 8;
   const sellByAllocation = Number.isFinite(goldAllocation) && goldAllocation > 20;
   const buyByAllocation = Number.isFinite(goldAllocation) && goldAllocation < 8;
+  const goldTargetBuyAmount = buyByAllocation && Number.isFinite(effectiveTotal)
+    ? Math.max(0, effectiveTotal * 0.10 - goldMarketValue)
+    : 0;
+  const goldTargetSellAmount = sellByAllocation && Number.isFinite(effectiveTotal)
+    ? Math.max(0, goldMarketValue - effectiveTotal * 0.15)
+    : 0;
   if (isFullPosition) {
     return {
       ready: true,
       phase: "rebalance",
       buySignal: buyByAllocation,
       sellSignal: sellByAllocation,
+      amount: buyByAllocation ? goldTargetBuyAmount : sellByAllocation ? goldTargetSellAmount : 0,
+      rebalanceTargetPct: buyByAllocation ? 10 : sellByAllocation ? 15 : null,
       goldBuys,
       goldBuyAmount,
       goldMarketValue,
@@ -1409,8 +1421,8 @@ function goldPlanSignal(lastSnap) {
         goldEstimate ? "按交易日志份额和最新518880价格估算黄金ETF市值" : "",
         !goldEstimate && goldMarketValue >= 85000 ? "资产快照黄金ETF市值已接近9万元目标仓位" : "",
         goldAllocation >= 8 ? "黄金仓位已达到8%以上，按三批完成后的再平衡规则处理" : "",
-        sellByAllocation ? "黄金仓位超过20%，按计划考虑适当减仓" : "",
-        buyByAllocation ? "黄金仓位低于8%，按计划考虑补仓" : "",
+        sellByAllocation ? `黄金仓位超过20%，提醒减仓至约15%，参考减仓 ${money(goldTargetSellAmount)}` : "",
+        buyByAllocation ? `黄金仓位低于8%，提醒补仓至约10%，参考补仓 ${money(goldTargetBuyAmount)}` : "",
         Number.isFinite(goldAllocation) && goldAllocation >= 10 && goldAllocation <= 15 ? "黄金仓位在10%-15%目标区间" : "",
         Number.isFinite(goldAllocation) && !sellByAllocation && !buyByAllocation && (goldAllocation < 10 || goldAllocation > 15) ? "黄金仓位偏离10%-15%目标区间，但未触发8%/20%再平衡线" : ""
       ].filter(Boolean)
@@ -1437,7 +1449,8 @@ function goldPlanSignal(lastSnap) {
     phase: "third-batch",
     buySignal: dueByDrawdown || dueByTime,
     sellSignal: sellByAllocation,
-    amount,
+    amount: sellByAllocation ? goldTargetSellAmount : amount,
+    rebalanceTargetPct: sellByAllocation ? 15 : null,
     anchorDate,
     firstBuy,
     close: Number(latest.close),
@@ -1450,7 +1463,7 @@ function goldPlanSignal(lastSnap) {
     reasons: [
       dueByDrawdown ? "第一批买入后高点回撤 >= 10%" : "",
       dueByTime ? "第一批买入已满约3个月" : "",
-      sellByAllocation ? "黄金仓位超过20%，需检查再平衡" : ""
+      sellByAllocation ? `黄金仓位超过20%，提醒减仓至约15%，参考减仓 ${money(goldTargetSellAmount)}` : ""
     ].filter(Boolean)
   };
 }
@@ -1504,19 +1517,19 @@ function renderSignalCards(lastSnap) {
     goldCard.className = "card signal-card sell";
     document.getElementById("goldSignalTitle").textContent = gold.phase === "rebalance" ? "出现黄金再平衡卖出提醒" : "出现卖出/再平衡提醒";
     document.getElementById("goldSignalText").textContent = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，超过20%上限，按计划考虑适当减仓。`
-      : `黄金仓位约 ${num(gold.goldAllocation, 2)}%，超过计划上限 20%，建议检查是否需要再平衡。`;
+      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，高于20%减仓线，提醒减仓至约15%，参考减仓 ${money(gold.amount)}。`
+      : `黄金仓位约 ${num(gold.goldAllocation, 2)}%，高于20%减仓线，提醒减仓至约15%，参考减仓 ${money(gold.amount)}。`;
   } else if (gold.buySignal) {
     goldCard.className = "card signal-card buy";
     document.getElementById("goldSignalTitle").textContent = gold.phase === "rebalance" ? "出现黄金再平衡补仓提醒" : "出现第三批买入提醒";
     document.getElementById("goldSignalText").innerHTML = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，低于8%补仓线，按计划考虑补仓。<br>${tags(gold.reasons)}`
+      ? `黄金三批已买入，当前进入长期持有与再平衡阶段。${goldValueText}黄金仓位约 ${num(gold.goldAllocation, 2)}%，低于8%补仓线，提醒补仓至约10%，参考补仓 ${money(gold.amount)}。<br>${tags(gold.reasons)}`
       : `计划金额约 ${money(gold.amount)} 元。第一批记录日 ${gold.anchorDate}，518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。<br>${tags(gold.reasons)}`;
   } else {
     goldCard.className = "card signal-card ok";
     document.getElementById("goldSignalTitle").textContent = "暂无买卖信号";
     document.getElementById("goldSignalText").textContent = gold.phase === "rebalance"
-      ? `黄金三批已买入，当前按长期持有与再平衡规则观察。目标区间10%-15%，低于8%才考虑补仓，高于20%才考虑减仓。${goldValueText}${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : "请先在资产快照里填写总资产和黄金ETF市值。"}`
+      ? `黄金三批已买入，当前按长期持有与再平衡规则观察。目标区间10%-15%，低于8%提醒补仓至约10%，高于20%提醒减仓至约15%。${goldValueText}${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : "请先在资产快照里填写总资产和黄金ETF市值。"}`
       : `第一批记录日 ${gold.anchorDate}。518880 最新 ${num(gold.close, 3)}，第一批买入后高点 ${num(gold.high, 3)}，回撤 ${num(gold.drawdown, 2)}%，已过 ${gold.days} 天。${Number.isFinite(gold.goldAllocation) ? "当前黄金仓位约 " + num(gold.goldAllocation, 2) + "%。" : ""}`;
   }
 
@@ -1562,11 +1575,11 @@ function renderExecutionAmountBox(etf, gold, lastSnap) {
     return;
   }
   if (gold && gold.sellSignal) {
-    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现减仓/再平衡提醒</td></tr><tr><th>当前黄金仓位</th><td>${Number.isFinite(gold.goldAllocation) ? num(gold.goldAllocation, 2) + "%" : "--"}</td></tr><tr><th>建议</th><td>按计划适当减仓，不做短线交易</td></tr></tbody></table>`;
+    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现减仓/再平衡提醒</td></tr><tr><th>当前黄金仓位</th><td>${Number.isFinite(gold.goldAllocation) ? num(gold.goldAllocation, 2) + "%" : "--"}</td></tr><tr><th>目标仓位</th><td>减仓至约15%</td></tr><tr><th>参考减仓金额</th><td>${Number.isFinite(gold.amount) ? money(gold.amount) : "--"}</td></tr></tbody></table>`;
     return;
   }
   if (gold && gold.buySignal) {
-    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现加仓/补仓提醒</td></tr><tr><th>建议金额</th><td>${Number.isFinite(gold.amount) ? money(gold.amount) : "--"}</td></tr><tr><th>依据</th><td>${escapeHtml((gold.reasons || []).join("；"))}</td></tr></tbody></table>`;
+    box.innerHTML = `<table class="mini-table"><tbody><tr><th>黄金ETF状态</th><td>出现加仓/补仓提醒</td></tr><tr><th>当前黄金仓位</th><td>${Number.isFinite(gold.goldAllocation) ? num(gold.goldAllocation, 2) + "%" : "--"}</td></tr><tr><th>目标仓位</th><td>补仓至约10%</td></tr><tr><th>参考补仓金额</th><td>${Number.isFinite(gold.amount) ? money(gold.amount) : "--"}</td></tr><tr><th>依据</th><td>${escapeHtml((gold.reasons || []).join("；"))}</td></tr></tbody></table>`;
     return;
   }
   box.textContent = "今天没有可执行金额。若信号满足，这里会直接显示比例和金额。";
@@ -1602,17 +1615,78 @@ function renderNextTriggerBox(etf, gold, current) {
   const box = document.getElementById("nextTriggerBox");
   if (!box) return;
   const items = [];
-  const c = sellCooldownStatus();
-  if (c.hasSell && !c.ready) items.push(`${formatDateZh(c.earliestDate)}后，若温度仍≥85%且辅助指标满足，重新评估主动减仓。`);
   if (current) {
     if (Number(current.temp) >= 80) items.push("若温度回落至80%以下，取消再次减仓观察，回到正常等待区。");
     if (Number(current.pe) >= 13) items.push("若PE跌破13，默认不主动减仓；若PE处于13~14.5，减仓幅度减半。");
     if (Number(current.temp) <= 30) items.push("若回撤达到10%~15%且PE≤13或温度≤30%，继续关注弱主动加仓。");
   }
-  if (etf && etf.buyPlan && etf.buyPlan.rawBuySignal && !etf.buyPlan.buySignal) items.push("主动买入信号已出现但被纪律条件拦截，下一次按拦截原因复核。");
-  if (gold && !gold.buySignal && !gold.sellSignal) items.push("黄金继续按三批买入/再平衡规则观察，低于8%补仓，高于20%减仓。");
+  if (gold && !gold.buySignal && !gold.sellSignal) items.push("黄金继续按三批买入/再平衡规则观察，低于8%补仓至约10%，高于20%减仓至约15%。");
   if (!items.length) items.push("继续每周更新数据并记录资产快照，等待下一次买入或减仓条件出现。");
   box.innerHTML = renderReasonList(items, 5);
+}
+function buyCycleStatus(temp, currentPe, hsDrawdown) {
+  const currentDate = today();
+  const rows = etf300ActiveBuyTrades();
+  const latestWarm = sentimentSeries()
+    .filter(r => r.date <= currentDate && Number(r.temp) > 30)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .pop();
+  const cycleBuys = rows.filter(t => !latestWarm || t.date > latestWarm.date);
+  const lastBuy = rows.length ? rows[rows.length - 1] : null;
+  if (!lastBuy) {
+    return { hasBuy: false, cycleBuys, remaining: 4, nextDate: "", ready: true, detail: "还没有主动买入记录。本轮最多可主动买入4次。" };
+  }
+  const currentPrice = Number((etf300PriceOnOrBefore(currentDate) || {}).close);
+  const lastBuyPrice = Number.isFinite(Number(lastBuy.price)) && Number(lastBuy.price) > 0
+    ? Number(lastBuy.price)
+    : Number((etf300PriceOnOrAfter(lastBuy.date) || {}).close);
+  const extremeEarlyAdd = Number.isFinite(temp) && temp <= 20 && Number.isFinite(hsDrawdown) && hsDrawdown <= -15 && Number.isFinite(currentPe) && currentPe <= 13;
+  const priceDownEnough = Number.isFinite(currentPrice) && Number.isFinite(lastBuyPrice) && lastBuyPrice > 0 && currentPrice <= lastBuyPrice * 0.95;
+  const requiredDays = extremeEarlyAdd && priceDownEnough ? 14 : 28;
+  const nextDate = shiftDate(lastBuy.date, requiredDays);
+  const remainingDays = Math.max(0, daysBetween(currentDate, nextDate));
+  return {
+    hasBuy: true,
+    cycleBuys,
+    remaining: Math.max(0, 4 - cycleBuys.length),
+    lastBuy,
+    currentPrice,
+    lastBuyPrice,
+    extremeEarlyAdd,
+    priceDownEnough,
+    requiredDays,
+    nextDate,
+    remainingDays,
+    ready: remainingDays === 0 && cycleBuys.length < 4,
+    latestWarm
+  };
+}
+function renderDisciplineStatus(etf, current) {
+  const sellBox = document.getElementById("sellCooldownSummary");
+  const buyBox = document.getElementById("buyCycleSummary");
+  if (sellBox) {
+    const c = sellCooldownStatus();
+    if (!c.hasSell) {
+      sellBox.textContent = "还没有沪深300ETF主动减仓记录。第一次主动减仓不受冷却期限制。";
+    } else if (c.ready) {
+      sellBox.innerHTML = `上次主动减仓：${formatDateZh(c.lastSell.date)}，已过 ${c.elapsedWeeks.toFixed(1)} 周，已满 ${c.requiredWeeks} 周冷静期。`;
+    } else {
+      sellBox.innerHTML = `上次主动减仓：${formatDateZh(c.lastSell.date)}，已过 ${c.elapsedWeeks.toFixed(1)} 周，还剩约 ${c.remainingWeeks.toFixed(1)} 周。<br>最早 ${formatDateZh(c.earliestDate)} 再评估主动减仓。`;
+    }
+  }
+  if (buyBox) {
+    const hs = latestHs300DrawdownInfo();
+    const cycle = buyCycleStatus(current ? Number(current.temp) : NaN, current && current.pe != null ? Number(current.pe) : NaN, hs ? Number(hs.drawdownPct) : NaN);
+    if (!cycle.hasBuy) {
+      buyBox.textContent = cycle.detail;
+    } else {
+      const status = cycle.ready ? "当前已满足间隔条件" : `最早 ${formatDateZh(cycle.nextDate)} 再评估主动买入`;
+      const extreme = cycle.extremeEarlyAdd
+        ? (cycle.priceDownEnough ? "极端低温提前通道成立，可按2周间隔。" : "极端低温条件满足，但尚未较上次主动买入价再跌5%，仍按4周间隔。")
+        : "常规4周观察期。";
+      buyBox.innerHTML = `本轮已主动买入 ${cycle.cycleBuys.length} 次，还剩 ${cycle.remaining} 次。<br>上次主动买入：${formatDateZh(cycle.lastBuy.date)}。${status}。<br>${extreme}`;
+    }
+  }
 }
 function currentWeeklySignalRecord() {
   return (state.signalHistory || []).find(r => r.date === today()) || null;
@@ -1735,6 +1809,7 @@ function renderWeeklyDashboard(lastSnap) {
 
   renderExecutionAmountBox(etf, gold, lastSnap);
   renderNoActionReasons(etf, gold, current);
+  renderDisciplineStatus(etf, current);
   renderNextTriggerBox(etf, gold, current);
   renderWeeklyActionStatus();
   renderRuleExplanation(etf, current);
@@ -1835,8 +1910,8 @@ function renderPreTradeChecklist(lastSnap) {
     items.push("若为被动减仓，确认回撤基准、是否已从新基准再跌15%，以及是否需重置基准。");
     items.push("卖出后在交易日志记录主动/被动减仓原因，并按实际情况更新资产快照。");
   }
-  if (gold && gold.buySignal) items.push(gold.phase === "rebalance" ? "黄金ETF补仓：确认三批已买满、黄金仓位确实低于8%，且不是因为短期波动冲动加仓。" : "黄金ETF买入：确认第三批规则触发，买入后黄金仓位不超过20%。");
-  if (gold && gold.sellSignal) items.push("黄金ETF再平衡：确认三批已买满或仓位确实超过20%，按计划只做适当减仓。");
+  if (gold && gold.buySignal) items.push(gold.phase === "rebalance" ? "黄金ETF补仓：确认三批已买满、黄金仓位确实低于8%，本次目标补至约10%，且不是因为短期波动冲动加仓。" : "黄金ETF买入：确认第三批规则触发，买入后黄金仓位不超过20%。");
+  if (gold && gold.sellSignal) items.push("黄金ETF再平衡：确认黄金仓位确实高于20%，本次目标减至约15%。");
   items.push("执行前先看一眼交易日志，避免重复操作。");
   target.innerHTML = items.map(x => `<label style="display:block;margin:4px 0"><input type="checkbox" style="width:auto;min-height:auto;margin-right:6px"> ${x}</label>`).join("");
 }
@@ -1856,7 +1931,7 @@ function renderAllocationWarnings(lastSnap) {
   }
   if (Number(lastSnap.total) > 0) {
     const goldPct = Number(lastSnap.gold || 0) / Number(lastSnap.total) * 100;
-    if (goldPct > 20) warnings.push(`黄金ETF约占总资产 ${num(goldPct, 1)}%，超过20%上限。`);
+    if (goldPct > 20) warnings.push(`黄金ETF约占总资产 ${num(goldPct, 1)}%，高于20%减仓线，需关注减至约15%的再平衡提醒。`);
   }
   box.innerHTML = warnings.length ? tags(warnings) : "仓位未见明显越界。";
 }
@@ -2383,7 +2458,18 @@ async function refreshMarketDataOnOpen() {
     box.textContent = "直接打开HTML时不会自动联网更新；需要通过本地服务打开。";
     return;
   }
-  const cloudUrl = localStorage.getItem(CLOUD_UPDATE_URL_KEY);
+  const isLocalHost = ["127.0.0.1", "localhost", "::1"].includes(location.hostname);
+  const cloudUrl = isLocalHost ? "" : localStorage.getItem(CLOUD_UPDATE_URL_KEY);
+  if (isLocalHost) {
+    try {
+      await reloadMarketDataScript();
+      box.textContent = `已在打开时通过本机更新：${AUTO.updatedAt || "完成"}`;
+      render();
+    } catch (error) {
+      box.textContent = "已打开本机页面，但重新读取市场数据失败，可刷新页面重试。";
+    }
+    return;
+  }
   if (cloudUrl) {
     box.textContent = "正在从云端更新市场数据...";
     try {
@@ -2391,7 +2477,22 @@ async function refreshMarketDataOnOpen() {
       box.textContent = `已云端更新：${AUTO.updatedAt || "完成"}`;
       render();
     } catch (error) {
-      box.textContent = "云端更新失败，已改用网页内置数据。";
+      box.textContent = "云端更新失败，正在改用本机更新...";
+      if (isLocalHost) {
+        try {
+          const response = await fetch("/api/update-market", { cache: "no-store" });
+          const result = await response.json().catch(() => ({ ok: false, message: "更新接口返回失败" }));
+          if (!result.ok) throw new Error(result.message || "更新失败");
+          await reloadMarketDataScript();
+          box.textContent = `已通过本机更新到最新数据：${AUTO.updatedAt || "完成"}`;
+          render();
+          return;
+        } catch (localError) {
+          box.textContent = "云端和本机更新都失败，已继续使用本地已有数据。";
+        }
+      } else {
+        box.textContent = "云端更新失败，已改用网页内置数据。";
+      }
       if (location.hostname.endsWith("github.io")) {
         try {
           await reloadMarketDataScript();
