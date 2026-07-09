@@ -1,19 +1,14 @@
 ﻿window.AUTO_MARKET_DATA = {
-    "updatedAt":  "2026-07-08 14:36:42",
+    "updatedAt":  "2026-07-09 15:30:45",
     "sources":  {
                     "margin":  "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPTA_RZRQ_LSHJ\u0026columns=ALL\u0026source=WEB\u0026sortColumns=DIM_DATE\u0026sortTypes=-1\u0026pageNumber=1\u0026pageSize=260",
                     "pe":  "https://www.csindex.com.cn/csindex-home/perf/indexCsiDsPe?indexCode=000300",
-                    "hs300":  "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300\u0026startDate=20251208\u0026endDate=20260708",
-                    "etf300":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251208\u0026end=20260708",
-                    "gold":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251208\u0026end=20260708",
+                    "hs300":  "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300\u0026startDate=20251209\u0026endDate=20260709",
+                    "etf300":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251209\u0026end=20260709",
+                    "gold":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251209\u0026end=20260709",
                     "news":  "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web\u0026biz=web_news_col\u0026column=350\u0026pageSize=80\u0026page=1\u0026req_trace=1"
                 },
     "margin":  [
-                   {
-                       "date":  "2025-06-12",
-                       "value":  18089.88,
-                       "rawYuan":  1808988358782
-                   },
                    {
                        "date":  "2025-06-13",
                        "value":  18044.25,
@@ -1308,13 +1303,14 @@
                        "date":  "2026-07-07",
                        "value":  29570.36,
                        "rawYuan":  2957035665877
+                   },
+                   {
+                       "date":  "2026-07-08",
+                       "value":  29381.15,
+                       "rawYuan":  2938114539211
                    }
                ],
     "pe":  [
-               {
-                   "date":  "2025-07-09",
-                   "value":  12.61
-               },
                {
                    "date":  "2025-07-10",
                    "value":  12.68
@@ -2350,16 +2346,13 @@
                {
                    "date":  "2026-07-08",
                    "value":  14.41
+               },
+               {
+                   "date":  "2026-07-09",
+                   "value":  14.66
                }
            ],
     "hs300":  [
-                  {
-                      "date":  "20251208",
-                      "open":  4593.14,
-                      "close":  4621.75,
-                      "high":  4640.63,
-                      "low":  4592.74
-                  },
                   {
                       "date":  "20251209",
                       "open":  4611.38,
@@ -3332,17 +3325,16 @@
                       "close":  4755.53,
                       "high":  4830.05,
                       "low":  4751.4
+                  },
+                  {
+                      "date":  "20260709",
+                      "open":  4774.4,
+                      "close":  4876.31,
+                      "high":  4882.85,
+                      "low":  4734.87
                   }
               ],
     "etf300":  [
-                   {
-                       "date":  "2025-12-08",
-                       "open":  4.588,
-                       "close":  4.609,
-                       "high":  4.631,
-                       "low":  4.586,
-                       "volume":  8263438
-                   },
                    {
                        "date":  "2025-12-09",
                        "open":  4.604,
@@ -4454,17 +4446,17 @@
                        "high":  4.872,
                        "low":  4.793,
                        "volume":  4846848
+                   },
+                   {
+                       "date":  "2026-07-09",
+                       "open":  4.813,
+                       "close":  4.916,
+                       "high":  4.925,
+                       "low":  4.777,
+                       "volume":  9558592
                    }
                ],
     "gold":  [
-                 {
-                     "date":  "2025-12-08",
-                     "open":  9.107,
-                     "close":  9.11,
-                     "high":  9.119,
-                     "low":  9.078,
-                     "volume":  4317056
-                 },
                  {
                      "date":  "2025-12-09",
                      "open":  9.075,
@@ -5576,28 +5568,36 @@
                      "high":  8.605,
                      "low":  8.53,
                      "volume":  2410682
+                 },
+                 {
+                     "date":  "2026-07-09",
+                     "open":  8.495,
+                     "close":  8.544,
+                     "high":  8.55,
+                     "low":  8.446,
+                     "volume":  2454207
                  }
              ],
     "signals":  {
-                    "generatedAt":  "2026-07-08 14:36:42",
+                    "generatedAt":  "2026-07-09 15:30:45",
                     "sentiment":  {
-                                      "date":  "2026-07-07",
-                                      "temperature":  83,
-                                      "marginPercentile":  96,
-                                      "pePercentile":  54,
-                                      "pe":  14.41
+                                      "date":  "2026-07-08",
+                                      "temperature":  91,
+                                      "marginPercentile":  95,
+                                      "pePercentile":  83,
+                                      "pe":  14.66
                                   },
                     "hs300":  {
-                                  "date":  "20260708",
-                                  "close":  4755.53,
+                                  "date":  "20260709",
+                                  "close":  4876.31,
                                   "sixMonthHigh":  5064.27,
-                                  "drawdownPct":  -6.1
+                                  "drawdownPct":  -3.71
                               },
                     "etf300":  {
-                                   "date":  "2026-07-08",
-                                   "close":  4.798,
+                                   "date":  "2026-07-09",
+                                   "close":  4.916,
                                    "sixMonthHigh":  5.095,
-                                   "drawdownPct":  -5.83,
+                                   "drawdownPct":  -3.51,
                                    "buySignal":  false,
                                    "sellSignal":  false,
                                    "suggestedBuyAmount":  0,
@@ -5609,10 +5609,10 @@
                                                    ]
                                },
                     "goldEtf":  {
-                                    "date":  "2026-07-08",
-                                    "close":  8.589,
+                                    "date":  "2026-07-09",
+                                    "close":  8.544,
                                     "sixMonthHigh":  11.977,
-                                    "drawdownPct":  -28.29,
+                                    "drawdownPct":  -28.66,
                                     "buySignal":  false,
                                     "sellSignal":  false,
                                     "reasons":  [
@@ -5623,74 +5623,74 @@
                                       "source":  "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web\u0026biz=web_news_col\u0026column=350\u0026pageSize=80\u0026page=1\u0026req_trace=1",
                                       "recentNews":  [
                                                          {
-                                                             "showTime":  "2026-07-08 22:28:34",
-                                                             "mediaName":  "东方财富Choice数据",
-                                                             "title":  "国内SC原油期货涨超6% 布伦特原油期货涨超7%",
-                                                             "summary":  "【国内SC原油期货涨超6% 布伦特原油期货涨超7%】国内SC原油期货主力合约涨6.12%，报483元/桶(交易报价为不含税价格)；WTI原油期货价格涨6.70%，报75.156美元/桶；布伦特原油期货价格涨7.04%，报79.384美元/桶。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798744831.html"
+                                                             "showTime":  "2026-07-09 23:20:58",
+                                                             "mediaName":  "每日经济新闻",
+                                                             "title":  "CPI温和上涨，PPI涨幅扩大！VR、可穿戴设备制造价格上涨，有企业称产品供不应求，所有生产线满负荷运转",
+                                                             "summary":  "7月9日，国家统计局公布6月份物价数据。6月份，居民消费价格指数（CPI）环比下降0.3%，同比上涨1.0%，扣除食品和能源价格的核心CPI同比上涨1.0%，继续保持温和上涨。图片来源：国家统计局网站国内部分行业需求增加，但受国际原油价格下行等因素影响，工业生产者出厂价格指数（PPI）环比下降0.3%，同比上涨4.1%。",
+                                                             "url":  "http://finance.eastmoney.com/news/1354,202607093800447480.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-08 22:25:45",
+                                                             "showTime":  "2026-07-09 23:06:22",
+                                                             "mediaName":  "上海证券报·中国证券网",
+                                                             "title":  "北京：将吸引更多优质会展项目落地",
+                                                             "summary":  "上证报中国证券网讯（记者刘暄实习生郭伊玳）北京市副市长唐文弘7月9日在北京市会展业政策专场路演活动中表示，北京将充分发挥首都资源集聚优势，持续优化会展业发展环境，完善政策支持和服务保障体系，深化与全国性商协会、国际会展组织及市场主体合作，吸引更多优质会展项目落地北京，推动会展业与产业发展深度融合，实现互利共赢。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800440021.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 23:02:36",
                                                              "mediaName":  "财联社",
-                                                             "title":  "东部型强—超强厄尔尼诺事件预计夏秋季形成",
-                                                             "summary":  "【东部型强—超强厄尔尼诺事件预计夏秋季形成】据国家气候中心，6月以来，赤道中东太平洋海温持续攀升，关键区海温指数达到1.60℃，较5月升高0.64℃。国家气候中心预测，未来赤道中东太平洋海表温度将继续升高，夏秋季将形成一次东部型强—超强厄尔尼诺事件。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798744094.html"
+                                                             "title":  "焦煤夜盘收跌约2.7% 焦炭跌约2.1%",
+                                                             "summary":  "焦煤夜盘收跌约2.7%，焦炭跌约2.1%，燃油、PTA跌1.3%，铁矿石涨约0.2%。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800434459.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-08 22:24:51",
+                                                             "showTime":  "2026-07-09 22:54:48",
+                                                             "mediaName":  "财联社",
+                                                             "title":  "福建晋江鞋厂着火部位为一层 燃烧物质为鞋材易燃蔓延快",
+                                                             "summary":  "【福建晋江鞋厂着火部位为一层 燃烧物质为鞋材易燃蔓延快】7月9日12时4分许，位于福建泉州晋江市的辉腾鞋业有限公司发生火情，火灾发生时该厂房现场有237名本厂员工和2名外来人员。现场共疏散救出213人，其中2人跳楼送医不治身亡，另外26名失联人员确认遇难。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800429760.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:51:56",
+                                                             "mediaName":  "每日经济新闻",
+                                                             "title":  "未来五年的碳达峰工作这样推进！国务院：到2030年，新型储能装机容量力争达到3亿千瓦，全国虚拟电厂最大调节能力达到5000万千瓦以上",
+                                                             "summary":  "7月9日，国务院印发《“十五五”碳达峰行动方案》（以下简称《行动方案》），为我国如期实现2030年前二氧化碳排放达到峰值目标描绘了“路线图”。接下来五年，我国能源结构将进一步调整优化。“十五五”时期是碳达峰的关键期、攻坚期，既要完成2030年国家自主贡献目标，也要为“十六五”碳排放总量稳步下降打下坚实基础。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800431064.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:51:48",
+                                                             "mediaName":  "第一财经",
+                                                             "title":  "时隔八年重磅更新，国家基本药物目录新增116种药品",
+                                                             "summary":  "基本药物目录，是一个确保所有人都能获得满足其基本医疗需求、安全、有效且价格合理的药物名单。在中国进入深度老龄化之后，对药物的需求已发生显著变化。自2018年版发布后时隔八年，《国家基本药物目录》再次更新。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800430679.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:46:31",
+                                                             "mediaName":  "界面新闻",
+                                                             "title":  "香港：近千家食肆允许顾客带犬入内用餐",
+                                                             "summary":  "据香港特区政府新闻公报，香港首批逾940间获准食肆7月9日起可容许顾客携带狗只进入，市民可浏览香港食物环境卫生署（食环署）专题网页（www.fehd.gov.hk/tc_chi/licensing/dog_restaurants/index.html），查阅食肆名单。这些食肆亦必须在入口当眼处时刻张贴食环署指定的“准许狗只进入的食肆”标示，以作识别。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800433598.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:35:19",
+                                                             "mediaName":  "南方财经网",
+                                                             "title":  "中国国家版权局与沙特知识产权局签署版权及相关权领域合作备忘录",
+                                                             "summary":  "中国国家版权局与沙特知识产权局9日在瑞士日内瓦签署版权及相关权领域合作备忘录。该备忘录的签署，标志着中沙版权与相关权领域合作的进一步深化，对扩大中国版权国际影响力，特别是加强与阿拉伯国家的版权合作，起到重要示范与推动作用。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800422148.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:30:00",
+                                                             "mediaName":  "券商中国",
+                                                             "title":  "9部门发文！20条举措，加快零售业发展",
+                                                             "summary":  "7月9日，商务部等9部门联合发布了《关于加快零售业创新发展的意见》，从统筹规划合理布局、商品服务质量提升、存量增量协同优化、线上线下公平竞争等方面提出了20条政策措施，促进零售业加速转型提升。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800424615.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-09 22:08:22",
                                                              "mediaName":  "北京商报",
-                                                             "title":  "7家头部电商被罚没36亿元 市场监管总局深入整治“内卷式”竞争",
-                                                             "summary":  "7月8日，北京商报记者获悉，市场监管总局于7月7日召开2026年上半年深入整治“内卷式”竞争专题新闻发布会，介绍今年整治工作进展。上半年市场监管总局围绕加强监管执法、深化平台治理、强化源头规范等方面部署开展16项专项行动，明确39项预期成果，同时不断完善制度规则标准、支持产业优化升级等，为营造公平有序的市场竞争环境、推动经济高质量发展提供有力支撑。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607083798744456.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 22:18:44",
-                                                             "mediaName":  "东方财富Choice数据",
-                                                             "title":  "国内SC原油期货主力合约涨5.18%",
-                                                             "summary":  "国内SC原油期货主力合约涨5.18%，报479元/桶。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798736810.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 22:17:17",
-                                                             "mediaName":  "东方财富Choice数据",
-                                                             "title":  "沪银期货主力合约跌4.06%",
-                                                             "summary":  "沪银期货主力合约跌4.06%，报14234元/千克。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798735980.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 22:10:23",
-                                                             "mediaName":  "东方财富Choice数据",
-                                                             "title":  "低硫燃料油连续主力合约日内涨5%",
-                                                             "summary":  "低硫燃料油连续主力合约日内涨5%，现报4103元。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798725616.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 22:07:00",
-                                                             "mediaName":  "证券时报网",
-                                                             "title":  "探索科技金融新路径，湖北累计发放科技信用贷款超2500亿元",
-                                                             "summary":  "7月8日，证券时报记者从中国人民银行湖北省分行了解到，截至2026年4月，湖北省科技贷款同比增长19.9%，高于各项贷款增速12.5个百分点；科技型中小企业、专精特新企业贷款分别同比增长27.9%、33.8%。2025年湖北省科技贷款增速高于全国平均水平，在13个科技要素密集地区排第一。目前湖北省已在银行间市场发行科技创新债券330亿元，居中部地区第一。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607083798740772.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 21:55:28",
-                                                             "mediaName":  "中国新闻网",
-                                                             "title":  "辽宁印发《实施意见》推进服务业扩能提质",
-                                                             "summary":  "中新网沈阳7月8日电(记者韩宏)辽宁省政府新闻办8日召开发布会消息称，到2030年，辽宁省服务业增加值达到2.4万亿元以上，数字经济核心产业增加值占地区生产总值比重达到6.5%。7月8日，辽宁省政府新闻办召开的发布会现场。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798705738.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 21:51:17",
-                                                             "mediaName":  "央视新闻客户端",
-                                                             "title":  "7月8日晚间央视新闻联播要闻集锦",
-                                                             "summary":  "今日摘要国家科学技术奖励大会、两院院士大会、中国科协第十一次全国代表大会在京召开。习近平发表重要讲话。李强主持。赵乐际、王沪宁、蔡奇、李希出席。丁薛祥宣读奖励决定。《习近平关于基层工作方法的重要论述学习读本》出版发行。中国科协第十一次全国代表大会举行第二次全体会议，蔡奇到会祝贺并代表党中央致词。丁薛祥接见国际科技合作奖获奖外国专家。",
-                                                             "url":  "http://finance.eastmoney.com/news/1345,202607083798699848.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-08 21:46:58",
-                                                             "mediaName":  "财联社",
-                                                             "title":  "邓紫棋杭州演唱会确认3场取消",
-                                                             "summary":  "【邓紫棋杭州演唱会确认3场取消】邓紫棋工作室发文称，受台风影响，杭州站将取消。主办方已公布退票及补偿方案。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607083798691973.html"
+                                                             "title":  "《“十五五”碳达峰行动方案》落地 我国能源结构升级按下加速键",
+                                                             "summary":  "未来五年我国能源结构将进一步调整优化。7月9日，国务院印发《“十五五”碳达峰行动方案》（以下简称《行动方案》），对“十五五”时期碳达峰工作作出部署，并从加快能源结构调整优化、推进产业绿色化低碳化、深化重点领域绿色低碳转型、强化支撑保障、凝聚各方合力等五方面部署了重点任务。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607093800403719.html"
                                                          }
                                                      ],
                                       "media":  {
