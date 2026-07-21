@@ -1,19 +1,14 @@
 ﻿window.AUTO_MARKET_DATA = {
-    "updatedAt":  "2026-07-20 14:30:32",
+    "updatedAt":  "2026-07-21 21:26:14",
     "sources":  {
                     "margin":  "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPTA_RZRQ_LSHJ\u0026columns=ALL\u0026source=WEB\u0026sortColumns=DIM_DATE\u0026sortTypes=-1\u0026pageNumber=1\u0026pageSize=260",
                     "pe":  "https://www.csindex.com.cn/csindex-home/perf/indexCsiDsPe?indexCode=000300",
-                    "hs300":  "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300\u0026startDate=20251220\u0026endDate=20260720",
-                    "etf300":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251220\u0026end=20260720",
-                    "gold":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251220\u0026end=20260720",
+                    "hs300":  "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300\u0026startDate=20251221\u0026endDate=20260721",
+                    "etf300":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251221\u0026end=20260721",
+                    "gold":  "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880\u0026fields1=f1,f2,f3,f4,f5,f6\u0026fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61\u0026klt=101\u0026fqt=1\u0026beg=20251221\u0026end=20260721",
                     "news":  "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web\u0026biz=web_news_col\u0026column=350\u0026pageSize=80\u0026page=1\u0026req_trace=1"
                 },
     "margin":  [
-                   {
-                       "date":  "2025-06-24",
-                       "value":  18103.04,
-                       "rawYuan":  1810304020981
-                   },
                    {
                        "date":  "2025-06-25",
                        "value":  18172.23,
@@ -1308,13 +1303,14 @@
                        "date":  "2026-07-17",
                        "value":  27575.68,
                        "rawYuan":  2757567529288
+                   },
+                   {
+                       "date":  "2026-07-20",
+                       "value":  26977.76,
+                       "rawYuan":  2697776157310
                    }
                ],
     "pe":  [
-               {
-                   "date":  "2025-07-21",
-                   "value":  12.83
-               },
                {
                    "date":  "2025-07-22",
                    "value":  12.91
@@ -2350,11 +2346,15 @@
                {
                    "date":  "2026-07-20",
                    "value":  14.29
+               },
+               {
+                   "date":  "2026-07-21",
+                   "value":  14.53
                }
            ],
     "hs300":  [
                   {
-                      "date":  "20251220",
+                      "date":  "20251221",
                       "open":  4587.67,
                       "close":  4611.62,
                       "high":  4615.87,
@@ -3325,6 +3325,13 @@
                       "close":  4598.32,
                       "high":  4628.8,
                       "low":  4521.18
+                  },
+                  {
+                      "date":  "20260721",
+                      "open":  4630.85,
+                      "close":  4739.23,
+                      "high":  4739.23,
+                      "low":  4566.28
                   }
               ],
     "etf300":  [
@@ -4431,6 +4438,14 @@
                        "high":  4.685,
                        "low":  4.577,
                        "volume":  40104538
+                   },
+                   {
+                       "date":  "2026-07-21",
+                       "open":  4.677,
+                       "close":  4.787,
+                       "high":  4.789,
+                       "low":  4.617,
+                       "volume":  27388321
                    }
                ],
     "gold":  [
@@ -5537,43 +5552,51 @@
                      "high":  8.362,
                      "low":  8.3,
                      "volume":  2007208
+                 },
+                 {
+                     "date":  "2026-07-21",
+                     "open":  8.352,
+                     "close":  8.468,
+                     "high":  8.477,
+                     "low":  8.345,
+                     "volume":  3211973
                  }
              ],
     "signals":  {
-                    "generatedAt":  "2026-07-20 14:30:32",
+                    "generatedAt":  "2026-07-21 21:26:14",
                     "sentiment":  {
-                                      "date":  "2026-07-17",
-                                      "temperature":  67,
-                                      "marginPercentile":  81,
-                                      "pePercentile":  34,
-                                      "pe":  14.29
+                                      "date":  "2026-07-20",
+                                      "temperature":  72,
+                                      "marginPercentile":  74,
+                                      "pePercentile":  68,
+                                      "pe":  14.53
                                   },
                     "hs300":  {
-                                  "date":  "20260720",
-                                  "close":  4598.32,
+                                  "date":  "20260721",
+                                  "close":  4739.23,
                                   "sixMonthHigh":  5064.27,
-                                  "drawdownPct":  -9.2
+                                  "drawdownPct":  -6.42
                               },
                     "etf300":  {
-                                   "date":  "2026-07-20",
-                                   "close":  4.65,
+                                   "date":  "2026-07-21",
+                                   "close":  4.787,
                                    "sixMonthHigh":  5.095,
-                                   "drawdownPct":  -8.73,
-                                   "buySignal":  true,
+                                   "drawdownPct":  -6.05,
+                                   "buySignal":  false,
                                    "sellSignal":  false,
-                                   "suggestedBuyAmount":  20000,
+                                   "suggestedBuyAmount":  0,
                                    "buyReasons":  [
-                                                      "沪深300近6个月回撤 \u003e= 8%"
+
                                                   ],
                                    "sellReasons":  [
 
                                                    ]
                                },
                     "goldEtf":  {
-                                    "date":  "2026-07-20",
-                                    "close":  8.318,
+                                    "date":  "2026-07-21",
+                                    "close":  8.468,
                                     "sixMonthHigh":  11.977,
-                                    "drawdownPct":  -30.55,
+                                    "drawdownPct":  -29.3,
                                     "buySignal":  false,
                                     "sellSignal":  false,
                                     "reasons":  [
@@ -5584,96 +5607,96 @@
                                       "source":  "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web\u0026biz=web_news_col\u0026column=350\u0026pageSize=80\u0026page=1\u0026req_trace=1",
                                       "recentNews":  [
                                                          {
-                                                             "showTime":  "2026-07-20 22:05:17",
+                                                             "showTime":  "2026-07-21 21:17:00",
                                                              "mediaName":  "上海证券报·中国证券网",
-                                                             "title":  "交通运输部召开2026年半年工作会",
-                                                             "summary":  "上证报中国证券网讯据交通运输部7月20日消息，7月20日，交通运输部召开2026年半年工作会，总结上半年工作，部署“十五五”规划实施和下半年重点工作。交通运输部党组书记、部长刘伟出席会议并讲话。交通运输部党组成员、中央纪委国家监委驻交通运输部纪检监察组组长邹天敬主持会议。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607203813693712.html"
+                                                             "title":  "锚定万亿蓝海 家政服务业扩能提质路径明确",
+                                                             "summary":  "上证报中国证券网讯商务部等9部门近日印发《关于促进家政服务业高质量发展的若干政策措施》（下称《政策措施》），围绕加大对家政企业支持力度、鼓励地方开展制度创新实践、强化职业技能培训、建立健全信用信息平台体系、夯实行业发展基础等5个方面，提出19项具体举措，破解当前家政服务业发展面临的堵点难点，推动行业高质量发展，促进家政服务消费。",
+                                                             "url":  "http://finance.eastmoney.com/news/1354,202607213815895652.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 22:04:25",
-                                                             "mediaName":  "上海证券报·中国证券网",
-                                                             "title":  "上海：树立和践行正确政绩观 进一步深化上海国资国企改革",
-                                                             "summary":  "上证报中国证券网讯（记者宋薇萍）7月19日至20日，上海市委组织部、上海市委党校、上海市国资委联合举办“树立和践行正确政绩观，进一步深化上海国资国企改革”专题研讨班。上海市副市长贺青在开班动员中指出，“十五五”时期是上海乘势而上的全面发力期、转型升级的攻坚决胜期，必须深刻领会国资国企进一步深化改革、加快创新转型、实现破局突围的战略意义，以更高站位、更大力度纵深推进各项改革任务。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607203813694014.html"
+                                                             "showTime":  "2026-07-21 21:11:57",
+                                                             "mediaName":  "东方财富Choice数据",
+                                                             "title":  "上期所燃油期货主力合约大涨4%",
+                                                             "summary":  "上期所燃油期货主力合约大涨4%。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815885653.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 21:53:13",
-                                                             "mediaName":  "央视新闻客户端",
-                                                             "title":  "7月20日晚间央视新闻联播要闻集锦",
-                                                             "summary":  "今日摘要东西部协作在助力脱贫攻坚、促进区域协调发展等方面发挥了重要作用。习近平总书记指出，要进一步完善协作机制，优化协作方式，拓展协作领域。系列报道《新思想引领新征程》今天播出：常态化做好东西部协作，推动共同富裕迈出坚实步伐。李强主持召开国务院常务会议。李强举行仪式欢迎泰国总理访华，并举行会谈。赵乐际会见泰国总理。今年上半年，我国规模以上工业增加值同比增长5.4%。",
-                                                             "url":  "http://finance.eastmoney.com/news/1345,202607203813674887.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-20 21:48:38",
-                                                             "mediaName":  "财联社",
-                                                             "title":  "7月20日晚间新闻精选",
-                                                             "summary":  "1、国常会听取对服务业扩能提质和“六张网”规划建设督查情况汇报，要系统推进“六张网”规划建设，因地因业加快实施，加强资金要素保障，切实把重大基础设施网络建设好。2、证监会召开投资者座谈会听取意见建议。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607203813678764.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-20 21:45:00",
-                                                             "mediaName":  "证券时报网",
-                                                             "title":  "上海举办专题研讨班 推进新一轮深化国资国企改革重点工作",
-                                                             "summary":  "人民财讯7月20日电，近日，上海市委组织部、市委党校、市国资委联合举办“树立和践行正确政绩观，进一步深化上海国资国企改革”专题研讨班。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607203813673830.html"
-                                                         },
-                                                         {
-                                                             "showTime":  "2026-07-20 21:43:06",
+                                                             "showTime":  "2026-07-21 21:03:14",
                                                              "mediaName":  "第一财经",
-                                                             "title":  "国家发改委召开民企座谈会，透露下半年宏观政策重点",
-                                                             "summary":  "在中国经济半年报发布之后，国家发改委召开了今年第6场民营企业座谈会。据国家发改委官网消息，7月20日，国家发改委主任郑栅洁主持召开民营企业座谈会，围绕上半年经济形势和下半年经济工作听取意见建议。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607203813667254.html"
+                                                             "title":  "专访张晓晶：直接融资反超信贷，中国制度化创新冒险能力持续增强｜科创资本论",
+                                                             "summary":  "“站在当下直接融资增量首次超过信贷的特殊节点，我们可以作出一个全新判断：中国制度化的创新冒险能力正在持续增强。”国家金融与发展实验室主任张晓晶近日接受第一财经记者专访时表示。中国人民银行行长潘功胜近期在2026年陆家嘴论坛公布的一组数据引发高度关注——在2025年的社会融资规模增量中，债券和股票融资首次超过贷款。而从存量上看，直接融资占比也已经上升到1/3左右。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815888129.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 21:42:05",
-                                                             "mediaName":  "中国新闻网",
-                                                             "title":  "海南自贸港落地首批DR基准利率贷款",
-                                                             "summary":  "中新网海口7月20日电(王晓斌袁佳文)近日，金融机构在海南落地三笔DR(DepositoryInstitutionsRepoRate，存款类金融机构间债券回购利率)基准利率贷款。这是海南自贸港首批落地的DR基准利率贷款，为深化利率市场化改革提供可复制、可推广的自贸港样本。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607203813664479.html"
+                                                             "showTime":  "2026-07-21 21:02:07",
+                                                             "mediaName":  "广州日报",
+                                                             "title":  "广州：深入实施提振消费专项行动 紧抓暑假及“金九银十”消费旺季深挖消费潜能",
+                                                             "summary":  "【广州：深入实施提振消费专项行动 紧抓暑假及“金九银十”消费旺季深挖消费潜能】7月20日，十二届广州市委财经委员会第十八次会议暨2026年上半年全市经济形势分析会召开，分析当前经济形势和上半年经济运行情况，研究部署下一阶段经济工作。会议强调，要内外发力促消费稳外贸，深入实施提振消费专项行动，紧抓暑假及“金九银十”消费旺季深挖消费潜能，大力开拓多元化国际市场，抓好“新三样”等特色优势产品出口和大宗商品进口，积极培育新的经济增长点。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815872660.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 21:40:05",
-                                                             "mediaName":  "上海证券报·中国证券网",
-                                                             "title":  "北京：2026上半年GDP同比增长5.4%",
-                                                             "summary":  "上证报中国证券网讯（记者刘暄实习生郭伊玳）上海证券报记者7月20日从2026年上半年北京经济运行情况新闻发布会上获悉，今年上半年，根据地区生产总值统一核算结果，北京市实现地区生产总值26411.9亿元，按不变价格计算，同比增长5.4%。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607203813667193.html"
+                                                             "showTime":  "2026-07-21 21:00:00",
+                                                             "mediaName":  "东方财富Choice数据",
+                                                             "title":  "7月21日东方财富财经晚报（附新闻联播）",
+                                                             "summary":  "1、证监会召开上市公司、行业机构、专家学者系列座谈会听取意见建议。2、公募基金最新持仓曝光，中际旭创取代宁德时代登顶。3、腾讯云：将大规模部署国产化算力，布局NPO超级节点。",
+                                                             "url":  "http://finance.eastmoney.com/news/1353,202607213815830330.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 21:40:02",
+                                                             "showTime":  "2026-07-21 20:59:34",
                                                              "mediaName":  "上观新闻",
-                                                             "title":  "学术圆桌｜读懂人工智能全球治理的中国方案",
-                                                             "summary":  "编者按习近平总书记深刻指出，人工智能应该是造福全人类的国际公共产品。已经连续举办八届的世界人工智能大会，既是全球人工智能前沿成果的集中展示，也是观察中国如何推动构建平权、互信、多元、共赢的全球人工智能开放生态的重要窗口。当前，人工智能全球治理面临规则碎片化、治理能力不均衡、地缘博弈与技术壁垒加剧等多重困境。",
-                                                             "url":  "http://finance.eastmoney.com/news/1350,202607203813659782.html"
+                                                             "title":  "外商在沪投资发生新变化！趋势指向“创新”与“枢纽”两大关键词！",
+                                                             "summary":  "利洁时集团宣布启用上海科学创新中心，这是其在亚洲最大的研发基地投资项目；亚马逊全球智能枢纽仓上海仓在临港新片区启动，并开放入仓……7月以来，不少外资项目落地投产，趋势越来越指向“创新”与“枢纽”两大关键词。记者注意到，在全球价值链深度重构的当下，外资对华投资的逻辑正发生转变，从“在中国销售”向“在中国创造”变化，从生产基地向创新策源地升级。",
+                                                             "url":  "http://finance.eastmoney.com/news/1354,202607213815882652.html"
                                                          },
                                                          {
-                                                             "showTime":  "2026-07-20 21:33:08",
-                                                             "mediaName":  "21世纪经济报道",
-                                                             "title":  "吴清直面散户座谈，国家队密集增持：A股稳市机制走向常态化",
-                                                             "summary":  "7月20日上午，证监会党委书记、主席吴清走进北京证券营业部，调研并主持召开投资者专场座谈会，与8名大中小散各类投资者代表面对面座谈交流。这场座谈会并非单次独立的市场沟通，而是证监会稳市系列座谈会的重要一环。为全方位稳住市场预期、夯实资本市场发展根基，证监会还会面向上市公司、证券公司、基金机构等各类市场主体开展座谈会，广泛倾听多方诉求、汇聚市场发展合力。",
-                                                             "url":  "http://finance.eastmoney.com/news/1354,202607203813658092.html"
+                                                             "showTime":  "2026-07-21 20:57:56",
+                                                             "mediaName":  "第一财经",
+                                                             "title":  "一财社论：构建公平统一的社会保障体系",
+                                                             "summary":  "7月20日的国务院常务会议研究了优化社会保障体系有关工作，提出要提高社会保障体系的整体性、协同性，优化相关制度安排，加强衔接联动，高效配置各种资源，增强社保制度可持续发展能力。在具体部署方面，会议要求深化政策机制创新，丰富多层次社保体系，积极探索灵活就业人员社保新模式，优化农民工等群体住房保障措施等。这意味着我国将持续推动社会保障走向全覆盖、深覆盖，积极促进社会保障的公平统一。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815886785.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-21 20:31:41",
+                                                             "mediaName":  "上观新闻",
+                                                             "title":  "创纪录！上海半年出口首破万亿，背后四股力量支撑",
+                                                             "summary":  "记者从上海海关外贸形势通气会上获悉，今年上半年，上海外贸顶压前行，进口和出口两端协同发力，共实现进出口2.55万亿元，同比增长18.6%。其中，进口1.41万亿元，增长17.4%。出口更是首破1万亿元大关，达1.14万亿元，增长20.1%。支撑上海出口“半年万亿”的第一股力量，来自由人工智能带动的电子硬件产业链产品的“大进大出”。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815852513.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-21 20:28:33",
+                                                             "mediaName":  "上海证券报·中国证券网",
+                                                             "title":  "2026年上半年安徽地区生产总值27370亿元 同比增长5.6%",
+                                                             "summary":  "上证报中国证券网讯（记者刘一枫）7月21日，安徽省政府新闻办举行新闻发布会，通报安徽省上半年经济运行情况。数据显示，2026年上半年，根据地区生产总值统一核算结果，全省地区生产总值27370亿元，按不变价格计算，同比增长5.6%，GDP增速高于全国0.9个百分点。",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815857595.html"
+                                                         },
+                                                         {
+                                                             "showTime":  "2026-07-21 19:59:34",
+                                                             "mediaName":  "财联社",
+                                                             "title":  "7月21日周二《新闻联播》要闻21条",
+                                                             "summary":  "7月21日周二《新闻联播》要闻21条",
+                                                             "url":  "http://finance.eastmoney.com/news/1350,202607213815832422.html"
                                                          }
                                                      ],
                                       "media":  {
-                                                    "score":  0,
+                                                    "score":  10,
                                                     "triggered":  false,
-                                                    "hitCount":  0,
+                                                    "hitCount":  1,
                                                     "strongHitCount":  0,
                                                     "examples":  [
-
+                                                                     {
+                                                                         "keyword":  "大涨",
+                                                                         "title":  "上期所燃油期货主力合约大涨4%",
+                                                                         "url":  "http://finance.eastmoney.com/news/1350,202607213815885653.html"
+                                                                     }
                                                                  ]
                                                 },
                                       "social":  {
-                                                     "score":  10,
+                                                     "score":  0,
                                                      "triggered":  false,
-                                                     "hitCount":  1,
+                                                     "hitCount":  0,
                                                      "strongHitCount":  0,
                                                      "examples":  [
-                                                                      {
-                                                                          "keyword":  "散户",
-                                                                          "title":  "吴清直面散户座谈，国家队密集增持：A股稳市机制走向常态化",
-                                                                          "url":  "http://finance.eastmoney.com/news/1354,202607203813658092.html"
-                                                                      }
+
                                                                   ]
                                                  },
                                       "note":  "关键词评估，只用于提示复核，不等同于全网舆情模型。"
