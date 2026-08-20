@@ -1,9 +1,21 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $outFile = Join-Path $root "market-data.js"
+
+function Read-PreviousMarketData {
+  if (-not (Test-Path -LiteralPath $outFile)) { return $null }
+  try {
+    $raw = Get-Content -LiteralPath $outFile -Raw -Encoding UTF8
+    $json = $raw -replace '^\s*window\.AUTO_MARKET_DATA\s*=\s*', '' -replace ';\s*$', ''
+    return $json | ConvertFrom-Json
+  } catch {
+    Write-Warning "Could not read previous market data: $($_.Exception.Message)"
+    return $null
+  }
+}
 
 function Invoke-Json($url) {
   $headers = @{
@@ -48,6 +60,20 @@ function Convert-Kline($json) {
       low = [double]$p[4]
       volume = [double]$p[5]
     }
+  }
+}
+
+function Get-KlineWithFallback($name, $url, $previousRows) {
+  try {
+    $rows = @(Convert-Kline (Invoke-Json $url))
+    if ($rows.Count -eq 0) { throw "$name returned no price records." }
+    return $rows
+  } catch {
+    if ($previousRows -and @($previousRows).Count -gt 0) {
+      Write-Warning "$name update failed; keeping the previous valid data. Error: $($_.Exception.Message)"
+      return @($previousRows)
+    }
+    throw
   }
 }
 
@@ -97,6 +123,7 @@ function Get-KeywordAssessment($items, $keywords, $strongKeywords) {
 }
 
 $endDate = Get-Date
+$previousData = Read-PreviousMarketData
 $startDate = $endDate.AddMonths(-7)
 $startText = $startDate.ToString("yyyyMMdd")
 $endText = $endDate.ToString("yyyyMMdd")
@@ -148,8 +175,8 @@ $hs300 = @($hs300Json.data) |
   }
 
 Write-Host "Reading ETF price history..."
-$gold = Convert-Kline (Invoke-Json $goldUrl)
-$etf300 = Convert-Kline (Invoke-Json $etf300Url)
+$gold = @(Get-KlineWithFallback "Gold ETF 518880" $goldUrl $previousData.gold)
+$etf300 = @(Get-KlineWithFallback "CSI 300 ETF 510300" $etf300Url $previousData.etf300)
 
 Write-Host "Reading news for narrative assessment..."
 $newsItems = @()
@@ -287,4 +314,5 @@ Write-Host ("PE records: {0}" -f $pe.Count)
 Write-Host ("CSI 300 drawdown: {0}%" -f $hs300Drawdown.drawdownPct)
 Write-Host ("300ETF buy signal: {0}; sell signal: {1}" -f ($hsBuyAmount -gt 0), $hsSell)
 Write-Host "Gold ETF buy signal: calculated in page from plan anchor date"
+
 
