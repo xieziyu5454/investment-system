@@ -1,19 +1,14 @@
 window.AUTO_MARKET_DATA = {
-  "updatedAt": "2026-11-04 19:41:42",
+  "updatedAt": "2026-11-05 19:52:34",
   "sources": {
     "margin": "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPTA_RZRQ_LSHJ&columns=ALL&source=WEB&sortColumns=DIM_DATE&sortTypes=-1&pageNumber=1&pageSize=260",
     "pe": "https://www.csindex.com.cn/csindex-home/perf/indexCsiDsPe?indexCode=000300",
-    "hs300": "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300&startDate=20260404&endDate=20261104",
-    "etf300": "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&beg=20260404&end=20261104",
-    "gold": "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&beg=20260404&end=20261104",
+    "hs300": "https://www.csindex.com.cn/csindex-home/perf/index-perf?indexCode=000300&startDate=20260405&endDate=20261105",
+    "etf300": "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.510300&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&beg=20260405&end=20261105",
+    "gold": "https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.518880&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&beg=20260405&end=20261105",
     "news": "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web&biz=web_news_col&column=350&pageSize=80&page=1&req_trace=1"
   },
   "margin": [
-    {
-      "date": "2025-10-09",
-      "value": 24291.95,
-      "rawYuan": 2429194647139.0
-    },
     {
       "date": "2025-10-10",
       "value": 24256.59,
@@ -1308,13 +1303,14 @@ window.AUTO_MARKET_DATA = {
       "date": "2026-11-03",
       "value": 22705.01,
       "rawYuan": 2270500717565.0
+    },
+    {
+      "date": "2026-11-04",
+      "value": 22718.19,
+      "rawYuan": 2271819168307.0
     }
   ],
   "pe": [
-    {
-      "date": "2025-11-05",
-      "value": 14.71
-    },
     {
       "date": "2025-11-06",
       "value": 14.88
@@ -2350,11 +2346,15 @@ window.AUTO_MARKET_DATA = {
     {
       "date": "2026-11-04",
       "value": 13.29
+    },
+    {
+      "date": "2026-11-05",
+      "value": 13.24
     }
   ],
   "hs300": [
     {
-      "date": "20260404",
+      "date": "20260405",
       "open": 4445.86,
       "close": 4440.62,
       "high": 4458.93,
@@ -3353,6 +3353,13 @@ window.AUTO_MARKET_DATA = {
       "close": 4101.34,
       "high": 4105.86,
       "low": 3987.15
+    },
+    {
+      "date": "20261105",
+      "open": 4065.72,
+      "close": 4113.41,
+      "high": 4136.8,
+      "low": 4065.72
     }
   ],
   "etf300": [
@@ -4491,6 +4498,14 @@ window.AUTO_MARKET_DATA = {
       "high": 4.191,
       "low": 4.062,
       "volume": 30473917.0
+    },
+    {
+      "date": "2026-11-05",
+      "open": 4.149,
+      "close": 4.195,
+      "high": 4.216,
+      "low": 4.145,
+      "volume": 17982072.0
     }
   ],
   "gold": [
@@ -5629,28 +5644,36 @@ window.AUTO_MARKET_DATA = {
       "high": 8.23,
       "low": 8.021,
       "volume": 8582623.0
+    },
+    {
+      "date": "2026-11-05",
+      "open": 8.4,
+      "close": 8.42,
+      "high": 8.453,
+      "low": 8.377,
+      "volume": 9188027.0
     }
   ],
   "signals": {
-    "generatedAt": "2026-11-04 19:41:42",
+    "generatedAt": "2026-11-05 19:52:34",
     "sentiment": {
-      "date": "2026-11-03",
-      "temperature": 3.0,
-      "marginPercentile": 0.0,
+      "date": "2026-11-04",
+      "temperature": 4.0,
+      "marginPercentile": 1.0,
       "pePercentile": 11.0,
-      "pe": 13.29
+      "pe": 13.24
     },
     "hs300": {
-      "date": "20261104",
-      "close": 4101.34,
+      "date": "20261105",
+      "close": 4113.41,
       "sixMonthHigh": 5064.27,
-      "drawdownPct": -19.01
+      "drawdownPct": -18.78
     },
     "etf300": {
-      "date": "2026-11-04",
-      "close": 4.175,
+      "date": "2026-11-05",
+      "close": 4.195,
       "sixMonthHigh": 5.095,
-      "drawdownPct": -18.06,
+      "drawdownPct": -17.66,
       "buySignal": true,
       "sellSignal": false,
       "suggestedBuyAmount": 30000,
@@ -5661,10 +5684,10 @@ window.AUTO_MARKET_DATA = {
       "sellReasons": []
     },
     "goldEtf": {
-      "date": "2026-11-04",
-      "close": 8.229,
+      "date": "2026-11-05",
+      "close": 8.42,
       "sixMonthHigh": 10.153,
-      "drawdownPct": -18.95,
+      "drawdownPct": -17.07,
       "buySignal": false,
       "sellSignal": false,
       "reasons": [
@@ -5675,88 +5698,82 @@ window.AUTO_MARKET_DATA = {
       "source": "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns?client=web&biz=web_news_col&column=350&pageSize=80&page=1&req_trace=1",
       "recentNews": [
         {
-          "showTime": "2026-11-05 03:16:40",
-          "mediaName": "央视财经",
-          "title": "实施全面节约战略，五部门部署七大重点任务",
-          "summary": "11月4日，国家发展改革委、工业和信息化部、自然资源部、水利部、国管局联合印发了《实施全面节约战略行动方案》（以下简称《方案》）。《方案》包括9章、22条举措，分为3个部分内容。",
-          "url": "http://finance.eastmoney.com/news/1350,202611053922369145.html"
+          "showTime": "2026-11-06 02:56:04",
+          "mediaName": "每日经济新闻",
+          "title": "城市24小时 | 制造业“国家队”扩容，这些城市“组队”突围",
+          "summary": "11月4日，工业和信息化部网站发布《关于2026年国家先进制造业集群名单的公示》，16个集群入围，公示期为11月4日至11月10日。公示期内如有异议，可以书面形式向工信部规划司反馈。本次遴选依据《工业和信息化部办公厅关于组织开展2026年国家先进制造业集群遴选的通知》组织开展，经省级工业和信息化主管部门推荐、专家评审产生。",
+          "url": "http://finance.eastmoney.com/news/1354,202611063923932678.html"
         },
         {
-          "showTime": "2026-11-05 02:10:33",
+          "showTime": "2026-11-06 02:40:52",
           "mediaName": "上海证券报",
-          "title": "进博会今日开幕 逾4000家企业共赴“开放之约”",
-          "summary": "【进博会今日开幕 逾4000家企业共赴“开放之约”】11月5日，第九届中国国际进口博览会（简称“进博会”）在国家会展中心（上海）盛大开幕。来自世界各地的参展商、采购商再次聚首，共赴一年一度的“开放之约”。",
-          "url": "http://finance.eastmoney.com/news/1354,202611053922364569.html"
+          "title": "虹桥论坛两大报告解码全球开放新格局 中国总体开放水平继续处于历史高位，世界开放的支撑依然坚实",
+          "summary": "11月5日，作为第九届虹桥国际经济论坛（简称“虹桥论坛”）的重要成果，中国社会科学院世界经济与政治研究所署名出版的双旗舰报告——《出口中国能力发展报告》和《世界开放报告2026》发布。上述报告显示，中国开放的相对位次逆势上升，总体开放水平继续处于历史高位，世界开放的支撑依然坚实。",
+          "url": "http://finance.eastmoney.com/news/1346,202611063923931773.html"
         },
         {
-          "showTime": "2026-11-05 01:54:30",
+          "showTime": "2026-11-06 02:40:50",
           "mediaName": "上海证券报",
-          "title": "“城市矿山”掘金记——江西丰城循环经济产业园走访观察",
-          "summary": "◎记者王凯丰随着社会经济快速发展，废旧家电、淘汰电子设备、报废汽车等固体废弃物快速增加，其中沉睡着铜、铝、锂等多种金属资源，汇聚成储量庞大、亟待开采的“城市矿山”。",
-          "url": "http://finance.eastmoney.com/news/1355,202611053922364679.html"
+          "title": "股票回购增持再贷款加力实施 上市公司：用足用好政策工具，降低回购增持资金成本",
+          "summary": "中国人民银行11月4日宣布，加力实施股票回购增持再贷款政策。据上海证券报记者了解，银行机构投放股票回购增持贷款的利率可参考同期限AAA级企业发债利率。数据显示，6月，主体评级AAA的企业发行的一年期短期融资券平均利率为1.44%。",
+          "url": "http://forex.eastmoney.com/news/1131,202611063923931183.html"
         },
         {
-          "showTime": "2026-11-05 01:54:19",
-          "mediaName": "上海证券报",
-          "title": "“十五五”时期我国交通投资仍将保持较大规模 时速400公里高铁建造提上日程",
-          "summary": "国家发展改革委11月4日举办奋进“十五五”系列新闻发布会（第二场），介绍夯实发展支撑有关情况。国家发展改革委基础设施发展司司长夏鑫在新闻发布会上表示，总的来看，我国交通运输的规模能力已基本适应经济社会发展需要，“十五五”时期将全面转向高质量发展，力争到2030年国家综合立体交通网主骨架建成率达到95%。",
-          "url": "http://finance.eastmoney.com/news/1352,202611053922365122.html"
+          "showTime": "2026-11-06 01:22:23",
+          "mediaName": "证券时报",
+          "title": "科创基因激活江淮文脉 安徽文旅演绎产业“智”变",
+          "summary": "当科创基因汇入江淮文脉，一场“文旅+科技”的产业“智”变正在安徽上演。坐拥名山胜境、古城文博、非遗技艺等文旅富矿，叠加人工智能、量子科技、聚变能源等产业优势，安徽以科技为桥，推动文旅产业从单一体验走向多元场景，从单点创新迈向生态协同。在政策引导、资本撬动、产业集聚协同发力下，安徽文旅逐步探索出一条文化有根、技术有为的融合发展之路，在数智化转型浪潮中打造出独具辨识度的地方样本。",
+          "url": "http://finance.eastmoney.com/news/1354,202611063923924964.html"
         },
         {
-          "showTime": "2026-11-05 01:54:18",
-          "mediaName": "上海证券报",
-          "title": "厘清权责边界 强化履职保障 江苏证监局推动董秘新规辖区落地见效",
-          "summary": "《上市公司董事会秘书监管规则》自2026年5月24日起正式施行。新规进一步细化董事会秘书信息披露、公司治理、内外沟通等工作职责，严格规范任职与兼职要求，从多方面保障董秘依法独立履职，推动董秘回归资本市场“把关人”本源，助力上市公司治理提质升级。新规实施后，江苏证监局对辖区上市公司董秘缺位、兼职、任职不合规情况开展全面摸排，建立专项整改台账。",
-          "url": "http://finance.eastmoney.com/news/1354,202611053922363866.html"
+          "showTime": "2026-11-06 01:22:18",
+          "mediaName": "证券时报",
+          "title": "服务型制造的中国样本—— 一张电路板小单，托住万千创新第一步",
+          "summary": "一笔订单平均616元。这样的生意，能做多大？深圳嘉立创的答案是：2026年上半年，1163.94万笔订单，71.73亿元营业收入，同比增长54.13%。把千万份几十元、几百元的小单汇聚到一起，就是一笔大生意。这笔生意的意义，远不止于一家企业的增长曲线。",
+          "url": "http://finance.eastmoney.com/news/1354,202611063923923949.html"
         },
         {
-          "showTime": "2026-11-05 01:54:17",
-          "mediaName": "上海证券报",
-          "title": "广交会闭幕：多项指标刷新历史纪录",
-          "summary": "11月4日，第140届中国进出口商品交易会（广交会）在广州闭幕。上海证券报记者从广交会新闻中心获悉，本届广交会适逢创办70周年，共有来自219个国家和地区的35.2万名境外采购商到会，比上届同期增长12.2%，规模再创历史新高。此外，本届广交会展品结构持续“向新向绿”，新产品展出占比达23.2%，绿色产品占比达26%，也双双创历史新高。",
-          "url": "http://finance.eastmoney.com/news/1354,202611053922363762.html"
+          "showTime": "2026-11-06 01:22:15",
+          "mediaName": "证券时报",
+          "title": "国务院关于金融工作情况的报告提出 支持中央汇金发挥类平准基金作用 巩固完善稳市机制",
+          "summary": "11月5日，人民银行官网公布《国务院关于金融工作情况的报告——2026年11月3日在十四届全国人民代表大会常务委员会第二十五次会议上》。报告提出，实施好支持资本市场的货币政策工具，支持中央汇金公司发挥类平准基金作用，拓宽中长期资金来源、渠道和入市方式，巩固完善资本市场稳市机制。",
+          "url": "http://stock.eastmoney.com/news/11215,202611063923925160.html"
         },
         {
-          "showTime": "2026-11-05 01:54:16",
-          "mediaName": "上海证券报",
-          "title": "五部门印发《实施全面节约战略行动方案》 到2030年我国单位GDP能耗降低10%左右",
-          "summary": "国家发展改革委等五部门近日联合印发《实施全面节约战略行动方案》，提出了到2030年全面节约工作的主要目标，聚焦“能水粮地矿材”各类资源要素节约面临的利用方式粗放、利用效率不高等突出问题，打出一套“组合拳”。",
-          "url": "http://finance.eastmoney.com/news/1355,202611053922363651.html"
+          "showTime": "2026-11-06 01:22:14",
+          "mediaName": "证券时报",
+          "title": "从“世界开放”到“出口中国” 进博会双旗舰报告解码全球经贸新格局",
+          "summary": "第九届中国国际进口博览会（以下简称“进博会”）11月5日至10日在国家会展中心（上海）举办。进博会同期举行的第九届虹桥国际经济论坛继续发布《世界开放报告2026》（以下简称《报告》）及最新一期世界开放指数。同时，今年还首次发布《出口中国能力发展报告》。《报告》显示，世界开放呈现“总体较大幅度收紧、内部分化加剧、动能深刻演变”的复杂格局。",
+          "url": "http://finance.eastmoney.com/news/1352,202611063923925287.html"
         },
         {
-          "showTime": "2026-11-05 01:54:04",
-          "mediaName": "上海证券报",
-          "title": "五部门印发《实施全面节约战略行动方案》 到2030年我国单位GDP能耗降低10%左右",
-          "summary": "国家发展改革委等五部门近日联合印发《实施全面节约战略行动方案》，提出了到2030年全面节约工作的主要目标，聚焦“能水粮地矿材”各类资源要素节约面临的利用方式粗放、利用效率不高等突出问题，打出一套“组合拳”。",
-          "url": "http://finance.eastmoney.com/news/1350,202611053922365349.html"
+          "showTime": "2026-11-06 01:22:12",
+          "mediaName": "证券时报",
+          "title": "时报数说 黑龙江年度电力外送首次突破200亿千瓦时",
+          "summary": "时报数说 黑龙江年度电力外送首次突破200亿千瓦时",
+          "url": "http://finance.eastmoney.com/news/1350,202611063923926353.html"
         },
         {
-          "showTime": "2026-11-05 01:32:00",
-          "mediaName": "证券日报",
-          "title": "从广交会看外贸提质发展三条路径",
-          "summary": "作为中国对外开放的窗口、外贸发展的“晴雨表”，第140届中国进出口商品交易会（以下简称“广交会”）11月4日在广州圆满落幕。透过这场盛会可以看到，中国外贸正告别单纯依靠成本优势的老路，沿着创新赋能、服务延伸、市场多元三条路径稳步提质，持续夯实外贸稳规模、优结构的根基。其一，供给端迭代提速，绿色与智能产品成为外贸增长主力。",
-          "url": "http://finance.eastmoney.com/news/1352,202611053922367073.html"
+          "showTime": "2026-11-06 01:22:08",
+          "mediaName": "证券时报",
+          "title": "国资委拟分片区推动地方改革 强调稳妥开展并购重组",
+          "summary": "11月3日，国务院国资委在京召开地方进一步深化国资国企改革座谈会，交流工作进展、听取意见建议，研究部署下一步重点任务。国务院国资委党委书记、主任程福波强调，要坚持问题导向、目标导向，创新方式方法、层层压实责任，以更高站位、更实举措推动新一轮国资国企改革落实落地，坚定不移做强做优做大国有企业和国有资本，更好发挥国有企业功能作用。",
+          "url": "http://finance.eastmoney.com/news/1352,202611063923925564.html"
         },
         {
-          "showTime": "2026-11-05 01:32:00",
-          "mediaName": "证券日报",
-          "title": "外资独资券商扩容带来市场所需“长板”",
-          "summary": "■周尚伃近期，花旗证券（中国）有限公司（以下简称“花旗证券”）获准设立，由花旗环球金融控股有限公司（以下简称“花旗”）全资持股，中国外资独资券商阵营扩容至7家。比起“又添一家”的数量变化更值得关注的，是这次新增的花旗证券带来了一块中国资本市场当下正需要的“长板”——跨境承销与并购咨询能力。",
-          "url": "http://finance.eastmoney.com/news/1354,202611053922366138.html"
+          "showTime": "2026-11-06 01:22:08",
+          "mediaName": "证券时报",
+          "title": "别让创新卡在“做样机”上",
+          "summary": "中国制造的创新突围，不仅体现在规模化量产的精度与速度上，还要看无数新想法能不能落地、能不能反复试错。服务型制造的兴起，正是在破解这道题；嘉立创的实践，是一个可感可触的样本。硬件创新有个朴素的道理：图纸画得再好，也得做出实物才算数。过去，从图纸到实物，中间横着一道不低的坎——要凑量、要排队、要给大生产让路。很多想法不是不好，而是卡在了这一步：做一次样机太贵、太慢，试不起。",
+          "url": "http://finance.eastmoney.com/news/1354,202611063923923688.html"
         }
       ],
       "media": {
-        "score": 10,
+        "score": 0,
         "triggered": false,
-        "hitCount": 1,
+        "hitCount": 0,
         "strongHitCount": 0,
-        "examples": [
-          {
-            "keyword": "新高",
-            "title": "广交会闭幕：多项指标刷新历史纪录",
-            "url": "http://finance.eastmoney.com/news/1354,202611053922363762.html"
-          }
-        ]
+        "examples": []
       },
       "social": {
         "score": 0,
